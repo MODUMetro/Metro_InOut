@@ -14,3 +14,5 @@ pg = st.navigation([page_main, page_inout, page_nowon, page_subway])
 
 # 3. 구성한 페이지 묶음을 실행
 pg.run()
+
+#깃허브 올리기 위한 변경 
