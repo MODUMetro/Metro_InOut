@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import os
 from pathlib import Path
+import sys
+from settings import CSV_PATH
 
 st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide")
 
@@ -21,20 +23,18 @@ st.markdown("환승역의 경우 통합된 인원수를 보여주며, 차트에 
 # ==========================================
 # 지정된 경로에서 자동 로드하기
 # ==========================================
-BASE_DIR = Path(__file__).resolve().parent        # .../project_folder/pages
-RESOURCE_DIR = BASE_DIR.parent / "resource"        # .../project_folder/resource
-
-DEFAULT_FILE_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
+# 프로젝트 루트(pages/의 부모 폴더)에 있는 settings.py를 확실히 찾도록 경로 추가
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 st.sidebar.header("📁 데이터 상태")
 df = None
 
 # 지정된 경로에 파일이 존재하면 자동으로 불러옵니다.
-if os.path.exists(DEFAULT_FILE_PATH):
-    df = load_data(DEFAULT_FILE_PATH)
+if os.path.exists(CSV_PATH):
+    df = load_data(CSV_PATH)
     st.sidebar.success(f"✅ 기본 데이터 자동 로드 완료")
 else:
-    st.sidebar.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {DEFAULT_FILE_PATH}")
+    st.sidebar.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {CSV_PATH}")
 
 # ==========================================
 

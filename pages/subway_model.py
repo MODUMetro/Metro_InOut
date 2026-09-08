@@ -4,40 +4,50 @@
 - 1시간/3시간/6시간 뒤를 각각 직접(direct) 예측하는 LightGBM 모델들을 한 번에 학습
 - subway_lgbm_next_hour.py + subway_lgbm_multihorizon.py 를 합친 파일
 
+경로 상수(CSV_PATH, MODEL_PATH), 시간대 순서(HOUR_ORDER), 노선명 통일 매핑(LINE_NAME_MAP)은
+전부 프로젝트 루트의 settings.py에서 정의하고, 이 파일은 거기서 import해서만 씀 (중복 정의 금지).
+
 폴더 구조 전제:
   project_folder/
     main.py
+    settings.py               <- 공유 설정값 (경로, HOUR_ORDER, LINE_NAME_MAP 등)
     resource/                 <- CSV 원본과 학습된 pkl이 여기 있음
     pages/
       subway_model.py         <- 이 파일 (pages 폴더 안)
+      subway_app.py           <- 이 파일의 함수를 import해서 씀
 """
+
+import sys
+import pickle
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
-import pickle
-from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# 이 파일(pages/subway_model.py) 기준으로 프로젝트 루트의 resource 폴더를 가리킴
-BASE_DIR = Path(__file__).resolve().parent        # .../project_folder/pages
-RESOURCE_DIR = BASE_DIR.parent / "resource"        # .../project_folder/resource
+# 프로젝트 루트(pages/의 부모 폴더)에 있는 settings.py를 확실히 찾도록 경로 추가
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-SRC_CSV = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
-MODEL_OUT = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
-
-HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
-LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
+from settings import (CSV_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
+                       LINE_NAME_MAP, LINE_NAME_REGEX_MAP)
 
 
 # ---------------------------------------------------------------------------
 # 1) 원본 CSV(Wide) -> 역/월/시간대 단위 Long 포맷으로 변환
 # ---------------------------------------------------------------------------
-def load_and_reshape(path: str) -> pd.DataFrame:
+def load_and_reshape(path: Path = CSV_PATH) -> pd.DataFrame:
     """Wide format(시간대x승하차가 컬럼) -> Long format(호선/역/월/시간대 단위) 변환"""
     df = pd.read_csv(path, encoding="cp949")
+    # 노선명 통일: 정확히 일치하는 것(LINE_NAME_MAP) 먼저, 패턴으로 잡아야 하는 것(LINE_NAME_REGEX_MAP) 그다음.
+    # 카테고리로 굳히기 전에 문자열 상태에서 전부 적용함.
+    df["호선명"] = df["호선명"].replace(LINE_NAME_MAP)
+    for pattern, replacement in LINE_NAME_REGEX_MAP:
+        df["호선명"] = df["호선명"].str.replace(pattern, replacement, regex=True)
     df["호선명"] = df["호선명"].astype("category")
     df["지하철역"] = df["지하철역"].astype("category")
+
+
 
     id_vars = ["사용월", "호선명", "지하철역"]
     value_vars = [c for c in df.columns if c not in id_vars + ["작업일자"]]
@@ -60,11 +70,8 @@ def load_and_reshape(path: str) -> pd.DataFrame:
     wide.columns.name = None
     wide = wide.rename(columns={"승차": "승차인원", "하차": "하차인원"})
 
-    # 지하철 운영일 순서(04-05시 시작 ~ 03-04시 종료)로 정렬
-    hour_order = ["04-05","05-06","06-07","07-08","08-09","09-10","10-11","11-12",
-                  "12-13","13-14","14-15","15-16","16-17","17-18","18-19","19-20",
-                  "20-21","21-22","22-23","23-24","00-01","01-02","02-03","03-04"]
-    hour_idx = {h: i for i, h in enumerate(hour_order)}
+    # HOUR_ORDER를 그대로 사용 (로컬 리스트 재정의하지 않음)
+    hour_idx = {h: i for i, h in enumerate(HOUR_ORDER)}
     wide["시간대_순서"] = wide["시간대"].map(hour_idx)
     return wide.sort_values(["호선명", "지하철역", "사용월", "시간대_순서"])
 
@@ -140,12 +147,37 @@ def train_all_horizons(df: pd.DataFrame, test_from_yyyymm: int = 202602):
     return models, results, feature_cols
 
 
-if __name__ == "__main__":
-    wide = load_and_reshape(SRC_CSV)
-    df = build_multihorizon_features(wide)
-    models, results, feature_cols = train_all_horizons(df)
+# ---------------------------------------------------------------------------
+# 4) 학습 + 저장 / 로드 (subway_app.py의 load_models()와 아래 __main__이 공유하는 부분)
+# ---------------------------------------------------------------------------
+def train_and_save(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH):
+    """csv_path로 처음부터 새로 학습해서 model_path에 저장. 이미 파일이 있어도 덮어씀"""
+    wide = load_and_reshape(csv_path)
+    train_df = build_multihorizon_features(wide)
+    models, results, feature_cols = train_all_horizons(train_df)
 
-    with open(MODEL_OUT, "wb") as f:
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(model_path, "wb") as f:
         pickle.dump({"models": models, "results": results,
                      "feature_cols": feature_cols}, f)
-    print(f"모델 저장 완료: {MODEL_OUT}")
+    return models, results, feature_cols
+
+
+def load_or_train_models(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH):
+    """
+    model_path에 학습된 pkl이 있으면 그대로 불러오고,
+    없으면 train_and_save()로 새로 학습해서 저장한 뒤 불러옴.
+    subway_app.py의 load_models()가 이 함수 하나만 호출하면 됨.
+    """
+    if not model_path.exists():
+        train_and_save(csv_path, model_path)
+
+    with open(model_path, "rb") as f:
+        obj = pickle.load(f)
+    return obj["models"], obj["feature_cols"]
+
+
+if __name__ == "__main__":
+    # 스크립트로 직접 실행하면(streamlit 없이) 항상 새로 학습해서 저장함
+    train_and_save()
+    print(f"모델 저장 완료: {MODEL_PATH}")
