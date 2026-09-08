@@ -7,11 +7,12 @@
 폴더 구조 전제:
   project_folder/
     main.py
+    settings.py               <- 공유 설정값 (경로, HOUR_ORDER, LINE_NAME_MAP 등)
     resource/                 <- CSV 원본과 학습된 pkl이 여기 있음
     pages/
       home.py
       in_out_data.py          <- 여기서 이 파일의 render()를 호출
-      subway_model.py         <- 경로 상수 / HOUR_ORDER / 학습 로직은 전부 여기 있음
+      subway_model.py         <- 데이터 로딩/학습 로직
       subway_app.py           <- 이 파일
 
 단독 테스트 실행: streamlit run pages/subway_app.py
@@ -25,13 +26,15 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-# 이 파일과 같은 폴더(pages/)에 있는 subway_model.py를 확실히 찾도록 경로 추가
-sys.path.append(str(Path(__file__).resolve().parent))
+# subway_model.py(같은 pages 폴더)와 settings.py(프로젝트 루트) 둘 다 찾도록 경로 추가
+_THIS_DIR = Path(__file__).resolve().parent
+sys.path.append(str(_THIS_DIR))          # pages/ 폴더 (subway_model.py를 위해)
+sys.path.append(str(_THIS_DIR.parent))   # 프로젝트 루트 (settings.py를 위해)
 
-# 경로 상수(CSV_PATH, MODEL_PATH), HOUR_ORDER, HORIZONS는 전부 subway_model.py 기준.
+# 경로 상수(CSV_PATH, MODEL_PATH), HOUR_ORDER, HORIZONS는 settings.py 기준.
 # 여기서 재정의하지 않고 import해서만 씀 (중복 방지)
-from subway_model import (CSV_PATH, MODEL_PATH, HOUR_ORDER, HORIZONS,
-                           load_and_reshape, build_multihorizon_features,
+from settings import CSV_PATH, MODEL_PATH, HOUR_ORDER, HORIZONS
+from subway_model import (load_and_reshape, build_multihorizon_features,
                            load_or_train_models)
 
 # NOTE: st.set_page_config()는 main.py에서 앱 전체 기준으로 이미 한 번 호출했으므로

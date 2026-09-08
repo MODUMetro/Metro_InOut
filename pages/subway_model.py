@@ -4,54 +4,33 @@
 - 1시간/3시간/6시간 뒤를 각각 직접(direct) 예측하는 LightGBM 모델들을 한 번에 학습
 - subway_lgbm_next_hour.py + subway_lgbm_multihorizon.py 를 합친 파일
 
-경로 상수(CSV_PATH, MODEL_PATH)와 시간대 순서(HOUR_ORDER)는 여기서만 정의하고,
-subway_app.py는 이 파일에서 import해서 그대로 재사용함 (중복 정의 금지).
+경로 상수(CSV_PATH, MODEL_PATH), 시간대 순서(HOUR_ORDER), 노선명 통일 매핑(LINE_NAME_MAP)은
+전부 프로젝트 루트의 settings.py에서 정의하고, 이 파일은 거기서 import해서만 씀 (중복 정의 금지).
 
 폴더 구조 전제:
   project_folder/
     main.py
+    settings.py               <- 공유 설정값 (경로, HOUR_ORDER, LINE_NAME_MAP 등)
     resource/                 <- CSV 원본과 학습된 pkl이 여기 있음
     pages/
       subway_model.py         <- 이 파일 (pages 폴더 안)
-      subway_app.py           <- 이 파일의 상수/함수를 import해서 씀
+      subway_app.py           <- 이 파일의 함수를 import해서 씀
 """
 
+import sys
 import pickle
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
-from pathlib import Path
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-# 이 파일(pages/subway_model.py) 기준으로 프로젝트 루트의 resource 폴더를 가리킴
-BASE_DIR = Path(__file__).resolve().parent        # .../project_folder/pages
-RESOURCE_DIR = BASE_DIR.parent / "resource"        # .../project_folder/resource
+# 프로젝트 루트(pages/의 부모 폴더)에 있는 settings.py를 확실히 찾도록 경로 추가
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
-MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
-
-HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
-LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
-
-# 지하철 운영일 순서(04-05시 시작 ~ 03-04시 종료). subway_app.py도 이 상수를 그대로 import해서 씀
-HOUR_ORDER = ["04-05", "05-06", "06-07", "07-08", "08-09", "09-10", "10-11", "11-12",
-              "12-13", "13-14", "14-15", "15-16", "16-17", "17-18", "18-19", "19-20",
-              "20-21", "21-22", "22-23", "23-24", "00-01", "01-02", "02-03", "03-04"]
-
-# 과거에 분리 표기되던 노선명을 지금 기준 통합 노선명으로 정리하는 매핑.
-# 여기 키에 없는 노선명(3호선, 4호선 등 이미 통합된 이름)은 그대로 유지됨.
-LINE_NAME_MAP = {
-    "일산선": "3호선",
-    "과천선": "4호선",
-    "안산선": "4호선",
-    "경부선": "1호선",
-    "경원선": "1호선",
-    "경인선": "1호선",
-    "경의선": "경의중앙선",
-    "중앙선": "경의중앙선",
-    "수인선": "수인분당선",
-    "분당선": "수인분당선",
-}
+from settings import (CSV_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
+                       LINE_NAME_MAP, LINE_NAME_REGEX_MAP)
 
 
 # ---------------------------------------------------------------------------
@@ -60,9 +39,14 @@ LINE_NAME_MAP = {
 def load_and_reshape(path: Path = CSV_PATH) -> pd.DataFrame:
     """Wide format(시간대x승하차가 컬럼) -> Long format(호선/역/월/시간대 단위) 변환"""
     df = pd.read_csv(path, encoding="cp949")
-    # 노선명 통일(LINE_NAME_MAP)은 카테고리로 굳히기 전에 먼저 적용
-    df["호선명"] = df["호선명"].replace(LINE_NAME_MAP).astype("category")
+    # 노선명 통일: 정확히 일치하는 것(LINE_NAME_MAP) 먼저, 패턴으로 잡아야 하는 것(LINE_NAME_REGEX_MAP) 그다음.
+    # 카테고리로 굳히기 전에 문자열 상태에서 전부 적용함.
+    df["호선명"] = df["호선명"].replace(LINE_NAME_MAP)
+    for pattern, replacement in LINE_NAME_REGEX_MAP:
+        df["호선명"] = df["호선명"].str.replace(pattern, replacement, regex=True)
+    df["호선명"] = df["호선명"].astype("category")
     df["지하철역"] = df["지하철역"].astype("category")
+
 
 
     id_vars = ["사용월", "호선명", "지하철역"]
