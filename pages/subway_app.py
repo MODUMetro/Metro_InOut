@@ -47,6 +47,7 @@ def _ensure_csv_exists():
     if not CSV_PATH.exists():
         st.error(
             "지정된 경로에서 CSV 파일을 찾을 수 없어 읽지 못했습니다.\n\n"
+            f"찾으려고 한 경로: `{CSV_PATH}`\n\n"
             "resource 폴더 위치나 프로젝트 폴더 구조가 원래 전제와 맞는지 확인해 주세요."
         )
         st.stop()
@@ -93,7 +94,7 @@ def render():
     latest_month = months[-1]
 
     now = datetime.now()
-    current_bracket = f"{now.hour:02d}-{(now.hour + 1) % 24:02d}"
+    current_bracket = f"{now.hour:02d}-{now.hour + 1:02d}"
     default_hour_idx = HOUR_ORDER.index(current_bracket) if current_bracket in HOUR_ORDER else 8
 
     use_now = st.checkbox(
