@@ -16,7 +16,7 @@
       subway_app.py           <- 이 파일
 
 단독 테스트 실행: streamlit run pages/subway_app.py
-(pkl 모델 파일이 resource 폴더에 없으면 최초 실행 시 자동으로 학습 후 저장됩니다)
+(pkl 모델 파일이 resource 폴더에 없으면 최초 실행 시 자동으로 학습 후 저장됨)
 """
 
 import sys
@@ -49,9 +49,9 @@ def _ensure_csv_exists():
     """
     if not CSV_PATH.exists():
         st.error(
-            "지정된 경로에서 CSV 파일을 찾을 수 없어 읽지 못했습니다.\n\n"
+            "지정된 경로에서 CSV 파일을 찾을 수 없어 읽지 못했음.\n\n"
             f"찾으려고 한 경로: `{CSV_PATH}`\n\n"
-            "resource 폴더 위치나 프로젝트 폴더 구조가 원래 전제와 맞는지 확인해 주세요."
+            "resource 폴더 위치나 프로젝트 폴더 구조가 원래 전제와 맞는지 확인요망."
         )
         st.stop()
 
@@ -63,7 +63,7 @@ def load_data() -> pd.DataFrame:
         wide = load_and_reshape(CSV_PATH)
         return build_multihorizon_features(wide)
     except Exception as e:
-        st.error(f"CSV 파일을 읽는 중 문제가 생겼습니다: {e}")
+        st.error(f"CSV 파일을 읽는 중 문제가 발생: {e}")
         st.stop()
 
 
@@ -71,7 +71,7 @@ def load_data() -> pd.DataFrame:
 def load_models():
     if not MODEL_PATH.exists():
         _ensure_csv_exists()
-        with st.spinner("처음 실행이라 모델을 학습하는 중이에요. 데이터가 커서 몇 분 정도 걸릴 수 있어요..."):
+        with st.spinner("처음 실행이라 모델을 학습하는 중, 데이터가 커서 몇 분 정도 걸릴 수 있음"):
             return load_or_train_models(CSV_PATH, MODEL_PATH)
 
     # 이미 학습된 pkl이 있으면 바로 로드 (스피너 없이)
@@ -84,7 +84,7 @@ def render():
     models, feature_cols = load_models()
 
     st.title("🚇 지하철 시간대별 승하차 인원 예측")
-    st.caption("기준 시간대까지의 직전 1~3시간대 실제값을 바탕으로, 1시간/3시간/6시간 뒤 승하차 인원을 예측합니다.")
+    st.caption("기준 시간대까지의 직전 1~3시간대 실제값을 바탕으로, 1시간/3시간/6시간 뒤 승하차 인원을 예측.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -103,8 +103,8 @@ def render():
     use_now = st.checkbox(
         f"지금 시각({now.strftime('%m월 %d일 %H시')}) 기준으로 자동 입력",
         value=False,
-        help="데이터에 있는 가장 최근 달의 같은 시간대 패턴으로 대신 계산합니다. "
-             "오늘 날짜의 실제 데이터가 아니라는 점 참고해 주세요.",
+        help="데이터에 있는 가장 최근 달의 같은 시간대 패턴으로 대신 계산. "
+             "오늘 날짜의 실제 데이터가 아니라는 점 참고.",
     )
 
     if use_now:
@@ -129,8 +129,8 @@ def render():
 
         if row.empty or row[feature_cols].isna().any(axis=1).iloc[0]:
             st.warning(
-                "이 조합은 직전 시간대 데이터가 부족해서 예측할 수 없어요. "
-                "(하루 시작인 04-05시 근처는 lag 값이 부족할 수 있습니다)"
+                "이 조합은 직전 시간대 데이터가 부족해서 예측할 수 없음. "
+                "(하루 시작인 04-05시 근처는 lag 값이 부족할 수 있음)"
             )
         else:
             X = row[feature_cols]
@@ -158,7 +158,7 @@ def render():
 
             st.caption(
                 "실제값(참고용)은 데이터에 이미 존재하는 과거 기록과 비교하기 위한 값이라, "
-                "미래 시점을 조회하면 표시되지 않습니다."
+                "미래 시점을 조회하면 표시되지 않음."
             )
 
     st.markdown("---")
@@ -173,7 +173,7 @@ def render():
     rank_pool = df[(df["사용월"] == month) & (df["시간대"] == hour)].dropna(subset=feature_cols)
 
     if rank_pool.empty:
-        st.warning("이 월/시간대 조합에는 예측 가능한 역이 없어요.")
+        st.warning("이 월/시간대 조합에는 예측 가능한 역이 없음.")
     else:
         X_all = rank_pool[feature_cols]
         pred_승차 = models[(rank_horizon, "승차인원")].predict(X_all)
@@ -190,14 +190,14 @@ def render():
         st.bar_chart(top10_get_off.set_index("지하철역")["예측 하차인원"])
 
         st.markdown("#### 🔺 사람이 가장 몰리는 역 (순유입 TOP 10)")
-        st.caption("순유입 = 예측 하차인원 - 예측 승차인원. 값이 클수록 그 시간대에 사람이 몰려드는 역이에요.")
+        st.caption("순유입 = 예측 하차인원 - 예측 승차인원. 값이 클수록 그 시간대에 사람이 몰려드는 역.")
         top10_in = table.sort_values("순유입(하차-승차)", ascending=False).head(10).reset_index(drop=True)
         top10_in.index = top10_in.index + 1
         st.dataframe(top10_in, width="stretch")
         st.bar_chart(top10_in.set_index("지하철역")["순유입(하차-승차)"])
 
         st.markdown("#### 🔻 사람이 가장 빠져나가는 역 (순유출 TOP 10)")
-        st.caption("순유입이 가장 작은(음수 폭이 큰) 역이에요. 값이 작을수록 그 시간대에 사람이 빠져나가는 역입니다.")
+        st.caption("순유입이 가장 작은(음수 폭이 큰) 역이에요. 값이 작을수록 그 시간대에 사람이 빠져나가는 역.")
         top10_out = table.sort_values("순유입(하차-승차)", ascending=True).head(10).reset_index(drop=True)
         top10_out.index = top10_out.index + 1
         st.dataframe(top10_out, width="stretch")
