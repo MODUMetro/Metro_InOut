@@ -11,14 +11,13 @@
     pages/
       home.py
       in_out_data.py          <- 여기서 이 파일의 render()를 호출
-      subway_model.py
+      subway_model.py         <- 경로 상수 / HOUR_ORDER / 학습 로직은 전부 여기 있음
       subway_app.py           <- 이 파일
 
 단독 테스트 실행: streamlit run pages/subway_app.py
 (pkl 모델 파일이 resource 폴더에 없으면 최초 실행 시 자동으로 학습 후 저장됩니다)
 """
 
-import pickle
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -29,48 +28,50 @@ import streamlit as st
 # 이 파일과 같은 폴더(pages/)에 있는 subway_model.py를 확실히 찾도록 경로 추가
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from subway_model import (load_and_reshape, build_multihorizon_features, get_feature_cols,
-                           train_all_horizons, HORIZONS)
-
-BASE_DIR = Path(__file__).resolve().parent          # .../project_folder/pages
-RESOURCE_DIR = BASE_DIR.parent / "resource"          # .../project_folder/resource
-
-CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
-MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
-
-HOUR_ORDER = ["04-05", "05-06", "06-07", "07-08", "08-09", "09-10", "10-11", "11-12",
-              "12-13", "13-14", "14-15", "15-16", "16-17", "17-18", "18-19", "19-20",
-              "20-21", "21-22", "22-23", "23-24", "00-01", "01-02", "02-03", "03-04"]
+# 경로 상수(CSV_PATH, MODEL_PATH), HOUR_ORDER, HORIZONS는 전부 subway_model.py 기준.
+# 여기서 재정의하지 않고 import해서만 씀 (중복 방지)
+from subway_model import (CSV_PATH, MODEL_PATH, HOUR_ORDER, HORIZONS,
+                           load_and_reshape, build_multihorizon_features,
+                           load_or_train_models)
 
 # NOTE: st.set_page_config()는 main.py에서 앱 전체 기준으로 이미 한 번 호출했으므로
 # 여기서는 절대 다시 호출하지 않음 (두 번 호출하면 StreamlitAPIException 발생)
 
 
+def _ensure_csv_exists():
+    """
+    CSV 원본이 없으면 raw FileNotFoundError 트레이스백 대신
+    친절한 경고 메시지를 띄우고 스크립트 실행을 멈춤.
+    load_data()/load_models() 둘 다 이 함수 하나로 체크함 (중복 방지).
+    """
+    if not CSV_PATH.exists():
+        st.error(
+            "지정된 경로에서 CSV 파일을 찾을 수 없어 읽지 못했습니다.\n\n"
+            "resource 폴더 위치나 프로젝트 폴더 구조가 원래 전제와 맞는지 확인해 주세요."
+        )
+        st.stop()
+
+
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    wide = load_and_reshape(CSV_PATH)
-    return build_multihorizon_features(wide)
+    _ensure_csv_exists()
+    try:
+        wide = load_and_reshape(CSV_PATH)
+        return build_multihorizon_features(wide)
+    except Exception as e:
+        st.error(f"CSV 파일을 읽는 중 문제가 생겼습니다: {e}")
+        st.stop()
 
 
 @st.cache_resource
 def load_models():
     if not MODEL_PATH.exists():
-        if not CSV_PATH.exists():
-            st.error(f"원본 CSV를 찾을 수 없어요: {CSV_PATH}")
-            st.stop()
+        _ensure_csv_exists()
         with st.spinner("처음 실행이라 모델을 학습하는 중이에요. 데이터가 커서 몇 분 정도 걸릴 수 있어요..."):
-            wide = load_and_reshape(CSV_PATH)
-            train_df = build_multihorizon_features(wide)
-            models, results, feature_cols = train_all_horizons(train_df)
+            return load_or_train_models(CSV_PATH, MODEL_PATH)
 
-            MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(MODEL_PATH, "wb") as f:
-                pickle.dump({"models": models, "results": results,
-                             "feature_cols": feature_cols}, f)
-
-    with open(MODEL_PATH, "rb") as f:
-        obj = pickle.load(f)
-    return obj["models"], obj["feature_cols"]
+    # 이미 학습된 pkl이 있으면 바로 로드 (스피너 없이)
+    return load_or_train_models(CSV_PATH, MODEL_PATH)
 
 
 def render():
