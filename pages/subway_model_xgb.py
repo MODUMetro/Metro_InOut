@@ -38,7 +38,7 @@ _THIS_DIR = Path(__file__).resolve().parent
 sys.path.append(str(_THIS_DIR))
 sys.path.append(str(_THIS_DIR.parent))
 
-from settings import CSV_PATH, MODEL_PATH_XGB, HORIZONS, XGB_PARAMS, EARLY_STOPPING_ROUNDS
+from settings import PARQUET_PATH, MODEL_PATH_XGB, HORIZONS, XGB_PARAMS, EARLY_STOPPING_ROUNDS
 from subway_model import load_and_reshape, build_multihorizon_features, get_feature_cols
 
 
@@ -90,9 +90,9 @@ def train_all_horizons_xgb(df, test_from_yyyymm: int = 202602):
     return models, results, feature_cols
 
 
-def train_and_save_xgb(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH_XGB):
-    """csv_path로 처음부터 새로 학습해서 model_path에 저장. 이미 파일이 있어도 덮어씀"""
-    wide = load_and_reshape(csv_path)
+def train_and_save_xgb(file_path: Path = PARQUET_PATH, model_path: Path = MODEL_PATH_XGB):
+    """처음부터 새로 학습해서 model_path에 저장. 이미 파일이 있어도 덮어씀"""
+    wide = load_and_reshape(file_path)
     train_df = build_multihorizon_features(wide)
     models, results, feature_cols = train_all_horizons_xgb(train_df)
 
@@ -103,13 +103,13 @@ def train_and_save_xgb(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH_
     return models, results, feature_cols
 
 
-def load_or_train_models_xgb(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH_XGB):
+def load_or_train_models_xgb(file_path: Path = PARQUET_PATH, model_path: Path = MODEL_PATH_XGB):
     """
     model_path에 학습된 pkl이 있으면 그대로 불러오고,
     없으면 train_and_save_xgb()로 새로 학습해서 저장한 뒤 불러옴.
     """
     if not model_path.exists():
-        train_and_save_xgb(csv_path, model_path)
+        train_and_save_xgb(file_path, model_path)
 
     with open(model_path, "rb") as f:
         obj = pickle.load(f)

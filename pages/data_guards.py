@@ -27,18 +27,17 @@ import streamlit as st
 # 프로젝트 루트(pages/의 부모 폴더)에 있는 settings.py를 확실히 찾도록 경로 추가
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from settings import CSV_PATH
 
-
-def ensure_csv_exists():
+def ensure_file_exists(file_path):
     """
-    CSV 원본이 없으면 raw FileNotFoundError 트레이스백 대신
+    파일 원본이 없으면 raw FileNotFoundError 트레이스백 대신
     친절한 경고 메시지를 띄우고 스크립트 실행을 멈춤.
     """
-    if not CSV_PATH.exists():
+        
+    if not file_path.exists():
         st.error(
-            "지정된 경로에서 CSV 파일을 찾을 수 없어 읽지 못했습니다.\n\n"
-            f"찾으려고 한 경로: `{CSV_PATH}`\n\n"
+            "지정된 경로에서 파일을 찾을 수 없어 읽지 못했습니다.\n\n"
+            f"찾으려고 한 경로: `{file_path}`\n\n"
             "resource 폴더 위치나 프로젝트 폴더 구조가 원래 전제와 맞는지 확인해 주세요."
         )
         st.stop()

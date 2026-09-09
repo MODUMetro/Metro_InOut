@@ -4,18 +4,22 @@ import plotly.express as px
 import os
 from pathlib import Path
 import sys
-from settings import CSV_PATH
+from settings import CSV_PATH, PARQUET_PATH
 
 st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide")
 
 # 1. CSV 파일 읽어오기 (캐싱) - 경로(String)와 업로드된 객체 모두 지원
 @st.cache_data
 def load_data(file):
-    try:
-        df = pd.read_csv(file, encoding='cp949')
-    except UnicodeDecodeError:
-        df = pd.read_csv(file, encoding='utf-8')
-    return df
+    if file.suffix == '.parquet':
+        return pd.read_parquet(file)    
+    elif file.suffix == '.csv':
+        try:
+            return pd.read_csv(file, encoding='cp949')
+        except UnicodeDecodeError:
+            return pd.read_csv(file, encoding='utf-8')
+    else:
+        raise ValueError("지원하지 않는 파일 형식입니다.")
 
 st.title("🚇 지하철 시간대별 유동인구 탐색 대시보드")
 st.markdown("환승역의 경우 통합된 인원수를 보여주며, 차트에 마우스를 올리면 호선별 상세 인원을 확인할 수 있습니다.")
@@ -30,11 +34,11 @@ st.sidebar.header("📁 데이터 상태")
 df = None
 
 # 지정된 경로에 파일이 존재하면 자동으로 불러옵니다.
-if os.path.exists(CSV_PATH):
-    df = load_data(CSV_PATH)
+if os.path.exists(PARQUET_PATH):
+    df = load_data(PARQUET_PATH)
     st.sidebar.success(f"✅ 기본 데이터 자동 로드 완료")
 else:
-    st.sidebar.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {CSV_PATH}")
+    st.sidebar.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {PARQUET_PATH}")
 
 # ==========================================
 

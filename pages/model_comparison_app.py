@@ -31,10 +31,10 @@ _THIS_DIR = Path(__file__).resolve().parent
 sys.path.append(str(_THIS_DIR))
 sys.path.append(str(_THIS_DIR.parent))
 
-from settings import CSV_PATH, MODEL_PATH, MODEL_PATH_XGB, HORIZONS
+from settings import CSV_PATH, PARQUET_PATH, MODEL_PATH, MODEL_PATH_XGB, HORIZONS
 from subway_model import load_or_train_models
 from subway_model_xgb import load_or_train_models_xgb
-from data_guards import ensure_csv_exists
+from data_guards import ensure_file_exists
 
 # NOTE: st.set_page_config()는 main.py에서 이미 호출했으므로 여기서는 다시 호출하지 않음
 
@@ -46,19 +46,19 @@ def load_comparison_results():
     없는 쪽만 새로 학습함. 둘 다 없으면 순서대로 둘 다 학습하느라
     시간이 걸릴 수 있어서 각각 스피너로 진행 상황을 알려줌.
     """
-    ensure_csv_exists()
+    ensure_file_exists(PARQUET_PATH)
 
     if not MODEL_PATH.exists():
         with st.spinner("LightGBM 모델이 없어서 새로 학습하는 중이에요 (몇 분 걸릴 수 있어요)..."):
-            _, lgbm_results, _ = load_or_train_models(CSV_PATH, MODEL_PATH)
+            _, lgbm_results, _ = load_or_train_models(PARQUET_PATH, MODEL_PATH)
     else:
-        _, lgbm_results, _ = load_or_train_models(CSV_PATH, MODEL_PATH)
+        _, lgbm_results, _ = load_or_train_models(PARQUET_PATH, MODEL_PATH)
 
     if not MODEL_PATH_XGB.exists():
         with st.spinner("XGBoost 모델이 없어서 새로 학습하는 중이에요 (몇 분 걸릴 수 있어요)..."):
-            _, xgb_results, _ = load_or_train_models_xgb(CSV_PATH, MODEL_PATH_XGB)
+            _, xgb_results, _ = load_or_train_models_xgb(PARQUET_PATH, MODEL_PATH_XGB)
     else:
-        _, xgb_results, _ = load_or_train_models_xgb(CSV_PATH, MODEL_PATH_XGB)
+        _, xgb_results, _ = load_or_train_models_xgb(PARQUET_PATH, MODEL_PATH_XGB)
 
     return lgbm_results, xgb_results
 
@@ -84,7 +84,7 @@ def render():
     """다른 페이지 파일에서 이 함수를 불러다 호출하면 비교 대시보드가 그려짐"""
     st.title("⚖️ LightGBM vs XGBoost 성능 비교")
     st.caption(
-        "같은 피처, 같은 train/test 분할(사용월 202602 기준), 최대한 동등한 하이퍼파라미터"
+        "같은 피처, 같은 train/test 분할(최근 6개월 기준), 최대한 동등한 하이퍼파라미터"
         "(리프 개수 63개, 조기종료 30라운드, 범주형 네이티브 처리)로 두 모델을 학습시켜 비교합니다."
     )
 
