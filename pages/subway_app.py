@@ -31,12 +31,12 @@ _THIS_DIR = Path(__file__).resolve().parent
 sys.path.append(str(_THIS_DIR))          # pages/ 폴더 (subway_model.py를 위해)
 sys.path.append(str(_THIS_DIR.parent))   # 프로젝트 루트 (settings.py를 위해)
 
-# 경로 상수(CSV_PATH, MODEL_PATH), HOUR_ORDER, HORIZONS는 settings.py 기준.
+# 경로 상수(PARQUET_PATH, MODEL_PATH), HOUR_ORDER, HORIZONS는 settings.py 기준.
 # 여기서 재정의하지 않고 import해서만 씀 (중복 방지)
-from settings import CSV_PATH, MODEL_PATH, HOUR_ORDER, HORIZONS
+from settings import CSV_PATH, PARQUET_PATH, MODEL_PATH, HOUR_ORDER, HORIZONS
 from subway_model import (load_and_reshape, build_multihorizon_features,
                            load_or_train_models)
-from data_guards import ensure_csv_exists
+from data_guards import ensure_file_exists
 
 # NOTE: st.set_page_config()는 main.py에서 앱 전체 기준으로 이미 한 번 호출했으므로
 # 여기서는 절대 다시 호출하지 않음 (두 번 호출하면 StreamlitAPIException 발생)
@@ -44,9 +44,9 @@ from data_guards import ensure_csv_exists
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    ensure_csv_exists()
+    ensure_file_exists(PARQUET_PATH)
     try:
-        wide = load_and_reshape(CSV_PATH)
+        wide = load_and_reshape(PARQUET_PATH)
         return build_multihorizon_features(wide)
     except Exception as e:
         st.error(f"CSV 파일을 읽는 중 문제가 생겼습니다: {e}")
@@ -56,12 +56,12 @@ def load_data() -> pd.DataFrame:
 @st.cache_resource
 def load_models():
     if not MODEL_PATH.exists():
-        ensure_csv_exists()
+        ensure_file_exists(PARQUET_PATH)
         with st.spinner("처음 실행이라 모델을 학습하는 중이에요. 데이터가 커서 몇 분 정도 걸릴 수 있어요..."):
-            return load_or_train_models(CSV_PATH, MODEL_PATH)
+            return load_or_train_models(PARQUET_PATH, MODEL_PATH)
 
     # 이미 학습된 pkl이 있으면 바로 로드 (스피너 없이)
-    return load_or_train_models(CSV_PATH, MODEL_PATH)
+    return load_or_train_models(PARQUET_PATH, MODEL_PATH)
 
 
 def render():
