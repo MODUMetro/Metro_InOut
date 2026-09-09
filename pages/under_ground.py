@@ -6,6 +6,7 @@ import platform
 from sklearn.ensemble import RandomForestRegressor
 from pathlib import Path
 import plotly.express as px
+from settings import PARQUET_PATH
 
 # 페이지 설정
 st.set_page_config(page_title="지하화 가치 예측 시뮬레이터", layout="wide")
@@ -29,11 +30,8 @@ st.markdown("---")
 # 1. 데이터 로드 및 모델 학습 (심야 시간 20시로 확대)
 @st.cache_data
 def load_and_train_model():
-    file_path = Path(__file__).resolve().parent.parent / 'resource' / 'Subway_Line_Station_Boarding_Alighting_Information.csv'
-    try:
-        df = pd.read_csv(file_path, encoding='cp949')
-    except UnicodeDecodeError:
-        df = pd.read_csv(file_path, encoding='utf-8')
+    file_path = PARQUET_PATH
+    df = pd.read_parquet(file_path)
 
     df['연도'] = df['사용월'].astype(str).str[:4]
     
@@ -135,7 +133,7 @@ st.markdown("---")
 # 사이드바 컨트롤러
 # ==========================================
 st.sidebar.header("🎛️ 시뮬레이터 설정")
-target_station = st.sidebar.selectbox("분석 대상 역 선택", ["노원", "구로", "금천구청"])
+target_station = st.sidebar.selectbox("분석 대상 역 선택", ["노원", "구로"])
 
 recent_months = sorted(df['사용월'].unique(), reverse=True)[:3]
 recent_df = df[df['사용월'].isin(recent_months)].groupby('지하철역')[['기초_낮하차비중', '기초_심야승차비중']].mean().reset_index()

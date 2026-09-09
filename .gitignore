@@ -1,2 +1,8 @@
+# 빌드중 생기는 불필요한 파일은 gitignore에 넣어 커밋 안되게 설정
 __pycache__/
-*.pkl
+build/
+dist/
+
+# git 반영에 필요없는 내용 확장자 파일위주로 제거
+*.spec
+*.pyc

@@ -4,7 +4,7 @@
 - 1시간/3시간/6시간 뒤를 각각 직접(direct) 예측하는 LightGBM 모델들을 한 번에 학습
 - subway_lgbm_next_hour.py + subway_lgbm_multihorizon.py 를 합친 파일
 
-경로 상수(CSV_PATH, MODEL_PATH), 시간대 순서(HOUR_ORDER), 노선명 통일 매핑(LINE_NAME_MAP)은
+경로 상수(PARQUET_PATH, MODEL_PATH), 시간대 순서(HOUR_ORDER), 노선명 통일 매핑(LINE_NAME_MAP)은
 전부 프로젝트 루트의 settings.py에서 정의하고, 이 파일은 거기서 import해서만 씀 (중복 정의 금지).
 
 폴더 구조 전제:
@@ -30,7 +30,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 # 프로젝트 루트(pages/의 부모 폴더)에 있는 settings.py를 확실히 찾도록 경로 추가
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from settings import (CSV_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
+from settings import (PARQUET_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
                        LINE_NAME_MAP, LINE_NAME_REGEX_MAP,
                        LGBM_PARAMS, EARLY_STOPPING_ROUNDS)
 
@@ -38,9 +38,9 @@ from settings import (CSV_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
 # ---------------------------------------------------------------------------
 # 1) 원본 CSV(Wide) -> 역/월/시간대 단위 Long 포맷으로 변환
 # ---------------------------------------------------------------------------
-def load_and_reshape(path: Path = CSV_PATH) -> pd.DataFrame:
-    """Wide format(시간대x승하차가 컬럼) -> Long format(호선/역/월/시간대 단위) 변환"""
-    df = pd.read_csv(path, encoding="cp949")
+def load_and_reshape(path: Path = PARQUET_PATH) -> pd.DataFrame:
+    """Wide format(시간대x승하차가 컬럼) -> Long format(호선/역/월/시간대 단위) 변환"""    
+    df = pd.read_parquet(path)
     # 노선명 통일: 정확히 일치하는 것(LINE_NAME_MAP) 먼저, 패턴으로 잡아야 하는 것(LINE_NAME_REGEX_MAP) 그다음.
     # 카테고리로 굳히기 전에 문자열 상태에서 전부 적용함.
     df["호선명"] = df["호선명"].replace(LINE_NAME_MAP)
@@ -153,9 +153,9 @@ def train_all_horizons(df: pd.DataFrame, test_from_yyyymm: int = 202602):
 # ---------------------------------------------------------------------------
 # 4) 학습 + 저장 / 로드 (subway_app.py의 load_models()와 아래 __main__이 공유하는 부분)
 # ---------------------------------------------------------------------------
-def train_and_save(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH):
-    """csv_path로 처음부터 새로 학습해서 model_path에 저장. 이미 파일이 있어도 덮어씀"""
-    wide = load_and_reshape(csv_path)
+def train_and_save(file_path: Path = PARQUET_PATH, model_path: Path = MODEL_PATH):
+    """처음부터 새로 학습해서 model_path에 저장. 이미 파일이 있어도 덮어씀"""
+    wide = load_and_reshape(file_path)
     train_df = build_multihorizon_features(wide)
     models, results, feature_cols = train_all_horizons(train_df)
 
@@ -166,14 +166,14 @@ def train_and_save(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH):
     return models, results, feature_cols
 
 
-def load_or_train_models(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PATH):
+def load_or_train_models(file_path: Path = PARQUET_PATH, model_path: Path = MODEL_PATH):
     """
     model_path에 학습된 pkl이 있으면 그대로 불러오고,
     없으면 train_and_save()로 새로 학습해서 저장한 뒤 불러옴.
     subway_app.py의 load_models()가 이 함수 하나만 호출하면 됨.
     """
     if not model_path.exists():
-        train_and_save(csv_path, model_path)
+        train_and_save(file_path, model_path)
 
     with open(model_path, "rb") as f:
         obj = pickle.load(f)

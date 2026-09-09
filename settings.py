@@ -30,6 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent
 RESOURCE_DIR = BASE_DIR / "resource"
 
 CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
+PARQUET_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.parquet"
 MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
 MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
 
