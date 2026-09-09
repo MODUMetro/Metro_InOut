@@ -18,6 +18,7 @@
 """
 
 import sys
+import time
 import pickle
 from pathlib import Path
 
@@ -30,7 +31,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from settings import (CSV_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
-                       LINE_NAME_MAP, LINE_NAME_REGEX_MAP)
+                       LINE_NAME_MAP, LINE_NAME_REGEX_MAP,
+                       LGBM_PARAMS, EARLY_STOPPING_ROUNDS)
 
 
 # ---------------------------------------------------------------------------
@@ -120,16 +122,15 @@ def train_all_horizons(df: pd.DataFrame, test_from_yyyymm: int = 202602):
             test_mask = d['사용월'] >= test_from_yyyymm
             train_df, test_df = d[~test_mask], d[test_mask]
 
-            model = lgb.LGBMRegressor(
-                n_estimators=500, learning_rate=0.05, num_leaves=63,
-                random_state=42, n_jobs=-1, verbosity=-1,
-            )
+            model = lgb.LGBMRegressor(**LGBM_PARAMS)
+            t0 = time.perf_counter()
             model.fit(
                 train_df[feature_cols], train_df[target_col],
                 categorical_feature=cat_cols,
                 eval_set=[(test_df[feature_cols], test_df[target_col])],
-                callbacks=[lgb.early_stopping(30, verbose=False)],
+                callbacks=[lgb.early_stopping(EARLY_STOPPING_ROUNDS, verbose=False)],
             )
+            elapsed = time.perf_counter() - t0
             pred = model.predict(test_df[feature_cols])
             y_true = test_df[target_col]
             key = (h, base_target)
@@ -137,12 +138,14 @@ def train_all_horizons(df: pd.DataFrame, test_from_yyyymm: int = 202602):
                 mae=mean_absolute_error(y_true, pred),
                 rmse=np.sqrt(mean_squared_error(y_true, pred)),
                 r2=r2_score(y_true, pred),
+                time=elapsed,
             )
             models[key] = model
             print(f"[{h}시간 뒤 / {base_target}] "
                   f"MAE={results[key]['mae']:.1f}  "
                   f"RMSE={results[key]['rmse']:.1f}  "
-                  f"R2={results[key]['r2']:.4f}")
+                  f"R2={results[key]['r2']:.4f}  "
+                  f"시간={elapsed:.1f}s")
 
     return models, results, feature_cols
 
@@ -174,7 +177,7 @@ def load_or_train_models(csv_path: Path = CSV_PATH, model_path: Path = MODEL_PAT
 
     with open(model_path, "rb") as f:
         obj = pickle.load(f)
-    return obj["models"], obj["feature_cols"]
+    return obj["models"], obj["results"], obj["feature_cols"]
 
 
 if __name__ == "__main__":

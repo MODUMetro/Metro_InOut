@@ -25,3 +25,10 @@ st.write("1/3/6시간 뒤 승하차 인원 예측, 순유입·순유출 TOP 10�
 st.page_link("pages/subway_app.py", label="예측 대시보드로 이동", icon="🚇")
 
 st.markdown("---")
+
+# --- 네 번째 행 (Row 4) ---
+st.subheader("⚖️ LightGBM vs XGBoost 비교")
+st.write("같은 조건으로 학습한 두 모델의 MAE·RMSE·R²·학습시간을 비교합니다.")
+st.page_link("pages/model_comparison_app.py", label="모델 비교 페이지로 이동", icon="⚖️")
+ 
+st.markdown("---")

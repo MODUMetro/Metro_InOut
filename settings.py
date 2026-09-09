@@ -31,9 +31,25 @@ RESOURCE_DIR = BASE_DIR / "resource"
 
 CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
 MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
+MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
 
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
+EARLY_STOPPING_ROUNDS = 30  # 두 모델 다 동일하게 적용하는 조기종료 기준
+
+# LightGBM/XGBoost 성능 비교가 공정하려면 하이퍼파라미터를 최대한 맞춰야 함.
+# num_leaves/max_leaves를 63으로 통일하고, XGBoost는 grow_policy='lossguide'로
+# LightGBM과 같은 리프 중심(leaf-wise) 성장 방식을 쓰게 함(기본값인 depth-wise가 아님).
+# enable_categorical=True로 XGBoost도 원-핫 인코딩 없이 범주형을 네이티브로 처리함.
+LGBM_PARAMS = dict(
+    n_estimators=500, learning_rate=0.05, num_leaves=63,
+    random_state=42, n_jobs=-1, verbosity=-1,
+)
+XGB_PARAMS = dict(
+    n_estimators=500, learning_rate=0.05, max_leaves=63,
+    grow_policy="lossguide", tree_method="hist", enable_categorical=True,
+    random_state=42, n_jobs=-1, verbosity=0,
+)
 
 # 지하철 운영일 순서(04-05시 시작 ~ 03-04시 종료)
 HOUR_ORDER = ["04-05", "05-06", "06-07", "07-08", "08-09", "09-10", "10-11", "11-12",
