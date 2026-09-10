@@ -11,9 +11,11 @@ st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout=
 # 1. CSV 파일 읽어오기 (캐싱) - 경로(String)와 업로드된 객체 모두 지원
 @st.cache_data
 def load_data(file):
-    if file.suffix == '.parquet':
+    suffix = Path(file.name).suffix
+
+    if suffix == '.parquet':
         return pd.read_parquet(file)    
-    elif file.suffix == '.csv':
+    elif suffix == '.csv':
         try:
             return pd.read_csv(file, encoding='cp949')
         except UnicodeDecodeError:
