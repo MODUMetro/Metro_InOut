@@ -25,6 +25,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import pytz
 
 # subway_model.py(같은 pages 폴더)와 settings.py(프로젝트 루트) 둘 다 찾도록 경로 추가
 _THIS_DIR = Path(__file__).resolve().parent
@@ -82,7 +83,7 @@ def render():
     months = sorted(df.loc[(df["호선명"] == line) & (df["지하철역"] == station), "사용월"].unique())
     latest_month = months[-1]
 
-    now = datetime.now()
+    now = datetime.now(pytz.timezone('Asia/Seoul'))
     current_bracket = f"{now.hour:02d}-{now.hour + 1:02d}"
     default_hour_idx = HOUR_ORDER.index(current_bracket) if current_bracket in HOUR_ORDER else 8
 
