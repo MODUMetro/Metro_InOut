@@ -12,15 +12,6 @@ import koreanize_matplotlib # for use korean font
 # 페이지 설정
 st.set_page_config(page_title="지하화 가치 예측 시뮬레이터", layout="wide")
 
-# 한글 폰트 설정
-if platform.system() == 'Windows':
-    plt.rcParams['font.family'] = 'Malgun Gothic'
-elif platform.system() == 'Darwin':
-    plt.rcParams['font.family'] = 'AppleGothic'
-else:
-    plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['axes.unicode_minus'] = False
-
 # ==========================================
 # 0. 헤더 및 경의중앙선 학습 배경 명시 (Row 1)
 # ==========================================
