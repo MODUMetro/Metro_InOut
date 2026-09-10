@@ -7,6 +7,7 @@ from sklearn.ensemble import RandomForestRegressor
 from pathlib import Path
 import plotly.express as px
 from settings import PARQUET_PATH
+import koreanize_matplotlib # for use korean font
 
 # 페이지 설정
 st.set_page_config(page_title="지하화 가치 예측 시뮬레이터", layout="wide")
