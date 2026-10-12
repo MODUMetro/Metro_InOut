@@ -32,3 +32,9 @@ st.write("같은 조건으로 학습한 두 모델의 MAE·RMSE·R²·학습시�
 st.page_link("pages/model_comparison_app.py", label="모델 비교 페이지로 이동", icon="⚖️")
  
 st.markdown("---")
+
+# --- 다섯 번째 행 (Row 5) ---
+st.subheader("🏙️ 지역별 TOP3 업종")
+st.write("행정동별 매출 상위 3개 업종을 매출 규모·특화도 기준으로 확인합니다.")
+st.page_link("pages/commercial_top3.py", label="지역별 TOP3 업종으로 이동", icon="🏙️")
+st.markdown("---")

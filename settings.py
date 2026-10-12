@@ -37,6 +37,7 @@ MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
 EARLY_STOPPING_ROUNDS = 30  # 두 모델 다 동일하게 적용하는 조기종료 기준
+VALID_FROM_YYYYMM = 202512  # test_from(202602) 이전 구간에서 최근 N개월을 검증용으로 뗌
 
 # LightGBM/XGBoost 성능 비교가 공정하려면 하이퍼파라미터를 최대한 맞춰야 함.
 # num_leaves/max_leaves를 63으로 통일하고, XGBoost는 grow_policy='lossguide'로
