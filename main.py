@@ -36,9 +36,11 @@ page_inout = st.Page("pages/in_out_data.py", title="📊 유동인구 데이터 
 page_nowon = st.Page("pages/under_ground.py", title="🏪 노원/구로 지하화 검토")
 page_subway = st.Page("pages/subway_app.py", title="🚇 지하철 승하차 예측 대시보드")
 page_comparison = st.Page("pages/model_comparison_app.py", title="⚖️ LightGBM vs XGBoost 비교")
+page_top3 = st.Page("pages/commercial_top3.py", title="🏙️ 지역별 TOP3 업종")
+
 
 # 2. 사이드바 네비게이션 메뉴 구성
-pg = st.navigation([page_main, page_inout, page_nowon, page_subway, page_comparison])
+pg = st.navigation([page_main, page_inout, page_nowon, page_subway, page_comparison, page_top3])
 
 # 3. 구성한 페이지 묶음을 실행
 pg.run()

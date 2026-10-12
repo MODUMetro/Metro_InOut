@@ -32,7 +32,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from settings import (PARQUET_PATH, MODEL_PATH, HORIZONS, LAGS, HOUR_ORDER,
                        LINE_NAME_MAP, LINE_NAME_REGEX_MAP,
-                       LGBM_PARAMS, EARLY_STOPPING_ROUNDS)
+                       LGBM_PARAMS, EARLY_STOPPING_ROUNDS, VALID_FROM_YYYYMM)
 
 
 # ---------------------------------------------------------------------------
@@ -120,18 +120,23 @@ def train_all_horizons(df: pd.DataFrame, test_from_yyyymm: int = 202602):
             d = df.dropna(subset=needed)
 
             test_mask = d['사용월'] >= test_from_yyyymm
-            train_df, test_df = d[~test_mask], d[test_mask]
+            train_full, test_df = d[~test_mask], d[test_mask]
+
+            # train_full 안에서 다시 시간 기준으로 잘라 early stopping용 valid_df를 뗌
+            # (test_df는 최종 평가 전까지 모델이 어떤 형태로든 보지 않게 함)
+            valid_mask = train_full['사용월'] >= VALID_FROM_YYYYMM
+            train_df, valid_df = train_full[~valid_mask], train_full[valid_mask]
 
             model = lgb.LGBMRegressor(**LGBM_PARAMS)
             t0 = time.perf_counter()
             model.fit(
                 train_df[feature_cols], train_df[target_col],
                 categorical_feature=cat_cols,
-                eval_set=[(test_df[feature_cols], test_df[target_col])],
+                eval_set=[(valid_df[feature_cols], valid_df[target_col])],  # test_df 대신 valid_df
                 callbacks=[lgb.early_stopping(EARLY_STOPPING_ROUNDS, verbose=False)],
             )
             elapsed = time.perf_counter() - t0
-            pred = model.predict(test_df[feature_cols])
+            pred = model.predict(test_df[feature_cols])  # 최종 평가는 test_df로만, 딱 한 번
             y_true = test_df[target_col]
             key = (h, base_target)
             results[key] = dict(
