@@ -10,11 +10,8 @@ import pandas as pd
 import plotly.express as px
 import pydeck as pdk
 import streamlit as st
+from settings import DATA_PATH, COORD_PATH
 
-# CSV는 resource 폴더(pages 폴더와 같은 위치)에 둠. exe(PyInstaller)로 묶였을 때는 압축 해제 폴더(_MEIPASS) 기준
-BASE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-DATA_PATH = BASE / "resource" / "seoul_monthly_station_ridership_filled_nearest.csv"
-COORD_PATH = BASE / "resource" / "coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
 MIN_SHARE = 0.01  # 특화도 기준일 때 지역 내 매출비중이 이 값 미만인 업종은 순위에서 뺌 (소액 업종이 튀는 것 방지)
 RANK_COLORS = {"1위": "#d62728", "2위": "#ff7f0e", "3위": "#1f77b4"}
 ELEV_MAX = 9000  # 기둥 최대 높이(m, 지도상 가상 높이). 가장 매출이 큰 동의 기둥 높이

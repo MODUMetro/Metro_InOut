@@ -33,6 +33,8 @@ CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.cs
 PARQUET_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.parquet"
 MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
 MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
+DATA_PATH = RESOURCE_DIR / "seoul_monthly_station_ridership_filled_nearest.csv"
+COORD_PATH = RESOURCE_DIR / "coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
 
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
