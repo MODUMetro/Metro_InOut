@@ -3,10 +3,15 @@ import re
 import time
 import requests
 import pandas as pd
+from datetime import datetime
+import pytz
+
+SELECT_SEOUL = 1
+SELECT_BUSAN = 2
+SLEEP_TIME = 0.05
 
 # 대상 역 목록
-# stations = ["서면", "사상", "냉정", "주례", "만덕", "안지랑", "두류", "남광주", "녹동", "노은", "유성온천"]
-stations = [
+stations_seoul = [
     "구로", "부평", "서울대입구(관악구청)", "영등포", "부천", "신도림",
     "의정부", "병점", "양주", "석계", "광운대", "수원", "안산", "부개",
     "창동", "회룡", "인천공항2터미널", "천안", "신이문", "죽전", "송내",
@@ -96,6 +101,47 @@ stations = [
     "대공원", "남동인더스파크", "달월", "어천", "당곡", "보라매공원",
     "서울지방병무청", "정릉", "지평", "팔당"
 ]
+stations_busan = [
+    # 1호선
+    "다대포해수욕장", "다대포항", "낫개", "신장림", "장림",
+    "동매", "신평", "하단", "당리", "사하",
+    "괴정", "대티", "서대신", "동대신", "토성",
+    "자갈치", "남포", "중앙", "부산역", "초량", "부산진",
+    "좌천", "범일", "범내골", "서면", "부전", "양정",
+    "시청", "연산", "교대", "동래", "명륜", "온천장",
+    "부산대", "장전", "구서", "두실", "남산", "범어사", "노포",
+    # 2호선: 서면 1호선 중복제거
+    "장산", "중동", "해운대", "동백", "벡스코", "센텀시티", "민락",
+    "수영", "광안", "금련산", "남천", "경성대부경대", "대연", "못골",
+    "지게골", "문현", "국제금융센터부산은행", "전포",
+    "부암", "가야", "동의대", "개금", "냉정", "주례",
+    "감전", "사상", "덕포", "모덕", "모라", "구남",
+    "구명", "덕천", "수정", "화명", "율리", "동원",
+    "금곡", "호포", "증산", "부산대양산캠퍼스", "남양산", "양산",
+    # 3호선: 연산 1호선 중복제거, 수영/덕천 2호선 중복제거
+    "망미", "배산", "물만골", "거제", "종합운동장",
+    "사직", "미남", "만덕", "남산정", "숙등", "구포", "강서구청", "체육공원", "대저",
+    # 4호선: 동래 1호선 중복제거, 미남 3호선 중복제거
+    "동래", "수안", "낙민", "충렬사", "명장",
+    "서동", "금사", "반여농산물시장", "석대", "영산대",
+    "윗반송", "고촌", "안평"
+]
+
+print("원하는 지역을 눌러주세요 ")
+input_area = input("1. 서울 2. 부산 : ")
+
+if input_area.isdigit():
+    value = int(input_area)
+    if value == SELECT_SEOUL:
+        stations = stations_seoul
+    elif value == SELECT_BUSAN:
+        stations = stations_busan
+    else:
+        print("입력오류 - 범위 밖입니다")
+        exit()
+else:
+     print("입력오류 - 숫자가 아닙니다")
+     exit()
 
 # 중복 제거 (순서 유지)
 stations = list(dict.fromkeys(stations))
@@ -147,15 +193,15 @@ data = []
 for i, st in enumerate(stations, 1):
     cleaned = clean_station_name(st)
     lat, lon = get_coordinates(cleaned)
-    data.append({"역명": st, "검색어": cleaned, "위도": lat, "경도": lon})
-    
-    # 진행 상황 출력 (10개 단위)
-    if i % 10 == 0 or i == len(stations):
-        print(f"진행 중... ({i}/{len(stations)}) - 최근 처리: {st} ({lat}, {lon})")
+    data.append({"역명": st, "검색어": cleaned, "위도": lat, "경도": lon})    
+
+    print(f"진행 중... ({i}/{len(stations)}) - 최근 처리: {st} ({lat}, {lon})")
         
-    time.sleep(0.05)  # API 속도 제한 방지
+    time.sleep(SLEEP_TIME)  # API 속도 제한 방지
 
 # CSV 파일로 저장
 df = pd.DataFrame(data)
-df.to_csv("metro_coordinates.csv", index=False, encoding="utf-8-sig")
-print("완료! 'metro_coordinates.csv' 파일이 저장되었습니다.")
+now = datetime.now(pytz.timezone('Asia/Seoul'))
+file_name = f"metro_coordinates_{now:%y%m%d}.csv"
+df.to_csv(file_name, index=False, encoding="utf-8-sig")
+print(f"완료! {file_name} 파일이 저장되었습니다.")
