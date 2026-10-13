@@ -10,7 +10,11 @@ import pandas as pd
 import plotly.express as px
 import pydeck as pdk
 import streamlit as st
-from settings import DATA_PATH, COORD_PATH
+from settings import (
+    DATA_PATH, COORD_PATH,
+    COPYRIGHT_SHORT, TOP3_INTRO_CAPTION, TOP3_REGION_CAPTION,
+    TOP3_PILLAR_CAPTION, TOP3_DOT_CAPTION, TOP3_LEGEND_CAPTION, MAP_ATTRIBUTION_CAPTION,
+)
 
 MIN_SHARE = 0.01  # 특화도 기준일 때 지역 내 매출비중이 이 값 미만인 업종은 순위에서 뺌 (소액 업종이 튀는 것 방지)
 RANK_COLORS = {"1위": "#d62728", "2위": "#ff7f0e", "3위": "#1f77b4"}
@@ -86,8 +90,7 @@ st.markdown("<style>[data-testid='stElementToolbar']{display:none !important;}</
 CHART_CONFIG = {"displayModeBar": False}  # 차트 우측 상단 메뉴(PNG 저장 등) 숨김
 
 st.title("지역(행정동)별 TOP3 업종")
-st.caption("한 지역에서 어떤 업종이 가장 강한지 상위 3개를 보여드립니다. 데이터는 분기 값을 3개월로 나눈 것이라, "
-           "월 단위로 고르셔도 같은 분기 안에서는 순위가 거의 바뀌지 않습니다.")
+st.caption(TOP3_INTRO_CAPTION)
 
 c1, c2 = st.columns([2, 3])
 with c1:
@@ -125,8 +128,7 @@ with tab1:
                  labels={"매출_억": "기간 매출 합계 (억 원)"})
     fig.update_layout(yaxis=dict(categoryorder="array", categoryarray=list(plot["업종"])[::-1]), height=300, margin=dict(l=0, r=0, t=10, b=0))  # 1위가 맨 위
     st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
-    st.caption("막대 옆 숫자는 그 지역 전체 매출 중 해당 업종이 차지하는 비중입니다. "
-               "특화도가 1보다 크면 서울 평균보다 이 지역에서 더 강한 업종입니다.")
+    st.caption(TOP3_REGION_CAPTION)
 
 # ── 2. 전체 표 ──
 with tab2:
@@ -142,7 +144,7 @@ with tab2:
 with tab3:
     coords = load_top3_coords()
     if coords is None:
-        st.info("지도에 필요한 좌표 파일(resource/행정동_좌표.csv)을 찾을 수 없습니다.")
+        st.info("지도에 필요한 좌표 파일(coordinate.csv)을 찾을 수 없습니다.")
     else:
         m1, m2 = st.columns(2)
         with m1:
@@ -211,19 +213,15 @@ with tab3:
         with map_box:
             st.pydeck_chart(deck, use_container_width=True, height=600)
         if style == "기둥":
-            st.caption("기둥 색은 선택한 순위의 업종이고, 기둥 높이는 그 업종 매출의 제곱근에 비례합니다. "
-                       "매출이 매우 큰 몇몇 동 때문에 나머지가 너무 낮아 보이는 것을 막으려고 제곱근으로 변환했습니다. "
-                       "그래서 높이 차이는 실제 매출 차이보다 완만하게 보이며, 실제 금액은 기둥에 마우스를 올리면 나옵니다. "
-                       "마우스 오른쪽 버튼을 누른 채 끌면 지도를 돌려볼 수 있습니다.")
+            st.caption(TOP3_PILLAR_CAPTION)
         else:
-            st.caption("점은 각 행정동의 중심 위치이며 행정구역 경계가 아닙니다. 색은 선택한 순위의 업종입니다.")
-        st.caption("범례의 괄호 안 숫자는 그 업종이 해당 순위인 지역의 수입니다. 점·기둥에 마우스를 올리면 1~3위가 표시됩니다.")
-        st.caption("지도 배경: © OpenStreetMap contributors © CARTO")
+            st.caption(TOP3_DOT_CAPTION)
+        st.caption(TOP3_LEGEND_CAPTION)
+        st.caption(MAP_ATTRIBUTION_CAPTION)
 
 # ── 공공누리 출처표시: 짧은 안내 + 홈 화면 링크 (전체 출처표시는 홈 화면 하단에 있음) ──
 st.markdown("---")
-st.caption("이 화면은 공공누리 제1유형으로 개방된 공공데이터(제공: 서울신용보증재단, 서울특별시)를 가공한 결과입니다. "
-           "데이터별 출처표시는 홈 화면 하단에서 확인하실 수 있습니다.")
+st.caption(COPYRIGHT_SHORT)
 try:
     st.page_link("pages/home.py", label="데이터 출처 확인하기 (홈 화면)", icon="📄")
 except Exception:  # 이 페이지만 단독 실행해서 홈 페이지가 없을 때는 링크만 생략
