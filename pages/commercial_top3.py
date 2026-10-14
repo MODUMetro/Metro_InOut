@@ -15,6 +15,7 @@ from settings import (
     COPYRIGHT_SHORT, TOP3_INTRO_CAPTION, TOP3_REGION_CAPTION,
     TOP3_PILLAR_CAPTION, TOP3_DOT_CAPTION, TOP3_LEGEND_CAPTION, MAP_ATTRIBUTION_CAPTION,
 )
+from util.utils import block_right_click_render_pydeck
 
 MIN_SHARE = 0.01  # 특화도 기준일 때 지역 내 매출비중이 이 값 미만인 업종은 순위에서 뺌 (소액 업종이 튀는 것 방지)
 RANK_COLORS = {"1위": "#d62728", "2위": "#ff7f0e", "3위": "#1f77b4"}
@@ -25,6 +26,10 @@ MAP_LEGEND_TOP = 10  # 지도 범례에 색으로 보여줄 업종 수 (나머�
 GRAY = [170, 170, 170]
 MAP_PALETTE = px.colors.qualitative.D3  # 서로 잘 구분되는 10색
 
+# ==========================================
+# 전체 페이지 마우스 우클릭 차단 스크립트 추가
+block_right_click_render_pydeck()
+# ==========================================
 
 @st.cache_data
 def load_top3_data() -> pd.DataFrame:
