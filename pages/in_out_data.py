@@ -9,6 +9,12 @@ import sys
 from settings import PARQUET_PATH, METRO_PATH_SEOUL, TRANSER_INFORMATION, SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, SUBWAY_COLORS
 
 st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide")
+from util.utils import block_right_click_render_pydeck
+
+# ==========================================
+# 전체 페이지 마우스 우클릭 차단 스크립트 추가
+block_right_click_render_pydeck()
+# ==========================================
 
 # 자주 사용하는 텍스트 상수 지정
 COL_STATION_ORIGIN = '역명'
