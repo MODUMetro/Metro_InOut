@@ -1,5 +1,5 @@
 import streamlit as st
-from settings import COPYRIGHT_FULL
+from settings import COPYRIGHT_FULL, BUSAN_SOURCE_CAPTION
 
 
 st.title("🏙️ 통합 상권 & 유동인구 분석 대시보드")
@@ -14,7 +14,7 @@ st.page_link("pages/in_out_data.py", label="유동인구 분석 페이지로 이
 
 st.markdown("---")
 
-# -- 두 번째 행 (Row 2) ---
+# --- 두 번째 행 (Row 2) ---
 st.subheader("🏪 노원/구로 지하화 검토")
 st.write("경의중앙선 지하화를 통해 노원/구로 지하화 내용 검토")
 st.page_link("pages/under_ground.py", label="노원/구로 지하화 검토", icon="🚉")
@@ -42,3 +42,4 @@ st.page_link("pages/commercial_top3.py", label="지역별 TOP3 업종으로 이�
 
 st.markdown("---")
 st.caption(COPYRIGHT_FULL)
+st.caption(BUSAN_SOURCE_CAPTION)
