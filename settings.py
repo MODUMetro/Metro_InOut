@@ -27,6 +27,8 @@ from pathlib import Path
 
 # settings.py가 있는 폴더 = 프로젝트 루트라고 전제
 BASE_DIR = Path(__file__).resolve().parent
+
+# resource 폴더 설정
 RESOURCE_DIR = BASE_DIR / "resource"
 
 CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
@@ -35,6 +37,7 @@ MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
 MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
 DATA_PATH = RESOURCE_DIR / "seoul_monthly_station_ridership_filled_nearest.csv"
 COORD_PATH = RESOURCE_DIR / "coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
+METRO_PATH_SEOUL = RESOURCE_DIR / "seoul_metro_coordinates.csv"
 
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
@@ -82,8 +85,26 @@ LINE_NAME_REGEX_MAP = [
     (r"^9호선.*단계$", "9호선"),
 ]
 
-
+# 노선 공식 색상 세팅
+SUBWAY_COLORS = {
+    '1호선': '#0052A4', '2호선': '#00A84D', '3호선': '#EF7C1C', 
+    '4호선': '#00A5DE', '5호선': '#996CAC', '6호선': '#CD7C2F', 
+    '7호선': '#747F00', '8호선': '#E6186C', '9호선': '#BDB092',
+    '수인분당선': '#FABE00', '신분당선': '#D4003B', 
+    '경의중앙선': '#77C4A3', '공항철도 1호선': '#0090D2',
+    '경강선': '#003DA5', '경부선': '#0052A4', '경원선': '#0052A4', 
+    '경인선': '#0052A4', '경의선': '#77C4A3', '경춘선': '#0C8E72', 
+    '과천선': '#00A5DE', '분당선': '#FABE00', '서해선': '#81A914', 
+    '수인선': '#FABE00', '신림선': '#6789CA', '안산선': '#00A5DE', 
+    '우이신설선': '#B0CE18', '일산선': '#EF7C1C', '장항선': '#0052A4', '중앙선': '#77C4A3'
+}
 # ── 화면에 표시되는 안내/출처 문구 ──
+
+# 유동인구 데이터 분석
+TRANSER_INFORMATION = ("환승역의 경우 통합된 인원수를 보여주며, 차트에 마우스를 올리면 호선별 상세 인원을 확인할 수 있습니다.")
+SHOW_CIRCLE_AND_BAR = ("막대, 파이 차트로 보기")
+SHOW_PYDECK = ("지도로 확인하기")
+
 # 홈 화면 하단 전체 출처표시 (st.caption은 마크다운 링크 지원)
 COPYRIGHT_FULL = (
     "본 저작물은 '서울신용보증재단'에서 '2023년' 작성하여 공공누리 제1유형으로 개방한 "
