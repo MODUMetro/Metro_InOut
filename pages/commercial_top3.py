@@ -1,5 +1,9 @@
 """지역(행정동)별 TOP3 업종 시각화 (통합 대시보드의 pages/ 용)
 단독 실행: streamlit run pages/commercial_top3.py
+
+- 탭1(지역 하나 보기)·탭3(전체 지역 지도)은 서울 데이터만
+- 탭2(전체 지역 표) 안에 [서울 | 부산] 하위 탭이 있어서, 서울 탭은 서울 표·부산 탭은 부산 표를 보여줌
+  (부산: busan_commercial.csv 필요, 없으면 부산 탭에 안내만 표시)
 """
 import inspect
 import sys
@@ -11,9 +15,10 @@ import plotly.express as px
 import pydeck as pdk
 import streamlit as st
 from settings import (
-    DATA_PATH, COORD_PATH,
+    DATA_PATH, COORD_PATH, BUSAN_DATA_PATH,
     COPYRIGHT_SHORT, TOP3_INTRO_CAPTION, TOP3_REGION_CAPTION,
     TOP3_PILLAR_CAPTION, TOP3_DOT_CAPTION, TOP3_LEGEND_CAPTION, MAP_ATTRIBUTION_CAPTION,
+    BUSAN_TABLE_CAPTION, BUSAN_SOURCE_CAPTION,
 )
 from util.utils import block_right_click_render_pydeck
 
@@ -25,6 +30,9 @@ MAP_MAX_ZOOM = 15
 MAP_LEGEND_TOP = 10  # 지도 범례에 색으로 보여줄 업종 수 (나머지는 회색 '기타')
 GRAY = [170, 170, 170]
 MAP_PALETTE = px.colors.qualitative.D3  # 서로 잘 구분되는 10색
+
+# ── 부산 (탭2 전체 지역 표의 [부산] 하위 탭에만 사용. 경로·안내/출처 문구는 settings.py) ──
+SHOW_BUSAN_STATION = True  # False면 부산 표에서 인근역 칸을 숨김
 
 # ==========================================
 # 전체 페이지 마우스 우클릭 차단 스크립트 추가
@@ -55,14 +63,30 @@ def load_top3_coords() -> pd.DataFrame | None:
 
 
 @st.cache_data
+def load_busan_data() -> pd.DataFrame | None:
+    """부산 상권 데이터. 파일이 없으면 None (부산 탭에 안내만 표시)."""
+    if not BUSAN_DATA_PATH.exists():
+        return None
+    df = pd.read_csv(BUSAN_DATA_PATH, encoding="utf-8-sig",
+                     usecols=["기준년월", "행정동", "인근지하철역명", "업종", "매출액"])
+    df["월"] = df["기준년월"].astype(str).str[:4] + "-" + df["기준년월"].astype(str).str[4:]
+    # 서울처럼 '동' 이름만 지역으로 씀. 다른 구에 같은 이름의 동이 있으면 '구 동'을 그대로 둬서 구분
+    dong = df["행정동"].str.split(" ", n=1).str[1]
+    names = df.drop_duplicates("행정동")["행정동"].str.split(" ", n=1).str[1]
+    dup = names[names.duplicated(keep=False)]
+    df["지역"] = dong.where(~dong.isin(dup), df["행정동"])
+    return df
+
+
+@st.cache_data
 def build_top3(df: pd.DataFrame, start: str, end: str, mode: str) -> pd.DataFrame:
     """기간 [start, end] 매출을 합쳐서 지역별 상위 3개 업종을 (지역, 순위) 한 행씩 돌려줌."""
     d = df[(df["월"] >= start) & (df["월"] <= end)]
     g = d.groupby(["지역", "인근지하철역명", "업종"], as_index=False).agg(매출=("매출액", "sum"))
     g["지역매출"] = g.groupby("지역")["매출"].transform("sum")
     g["비중"] = g["매출"] / g["지역매출"]
-    seoul = g.groupby("업종")["매출"].sum() / g["매출"].sum()
-    g["특화도"] = g["비중"] / g["업종"].map(seoul)
+    city_share = g.groupby("업종")["매출"].sum() / g["매출"].sum()
+    g["특화도"] = g["비중"] / g["업종"].map(city_share)
     if mode == "특화도":
         g = g[g["비중"] >= MIN_SHARE]
         key = "특화도"
@@ -101,7 +125,7 @@ c1, c2 = st.columns([2, 3])
 with c1:
     mode = st.radio("순위 기준", ["매출 규모", "특화도"], horizontal=True,
                     help="매출 규모: 기간 내 매출 합계가 큰 업종 / 특화도: 서울 전체 대비 그 지역에서 유난히 비중이 높은 업종 "
-                         f"(지역 내 비중 {MIN_SHARE:.0%} 미만은 제외됩니다)")
+                         f"(지역 내 비중 {MIN_SHARE:.0%} 미만은 제외됩니다). 부산 탭은 부산 전체 대비로 계산됩니다.")
 with c2:
     start, end = st.select_slider("기간", options=months, value=(months[-3], months[-1]))
 
@@ -135,15 +159,38 @@ with tab1:
     st.plotly_chart(fig, use_container_width=True, config=CHART_CONFIG)
     st.caption(TOP3_REGION_CAPTION)
 
-# ── 2. 전체 표 ──
+# ── 2. 전체 표 ([서울] [부산] 하위 탭) ──
 with tab2:
-    wide = top.pivot(index=["지역", "인근지하철역명"], columns="순위", values="업종").reset_index()
-    wide = wide.rename(columns={"인근지하철역명": "인근역"})
-    q = st.text_input("지역 이름 검색", "")
-    if q:
-        wide = wide[wide["지역"].str.contains(q)]
-    wide = wide.reset_index(drop=True)
-    st.dataframe(wide.style.map(color_cell, subset=["1위", "2위", "3위"]), use_container_width=True, height=600, hide_index=True)
+    sub_seoul, sub_busan = st.tabs(["서울", "부산"])
+
+    with sub_seoul:
+        wide = top.pivot(index=["지역", "인근지하철역명"], columns="순위", values="업종").reset_index()
+        wide = wide.rename(columns={"인근지하철역명": "인근역"})
+        q = st.text_input("지역 이름 검색", "", key="seoul_search")
+        if q:
+            wide = wide[wide["지역"].str.contains(q)]
+        wide = wide.reset_index(drop=True)
+        st.dataframe(wide.style.map(color_cell, subset=["1위", "2위", "3위"]), use_container_width=True, height=600, hide_index=True)
+
+    with sub_busan:
+        bdf = load_busan_data()
+        if bdf is None:
+            st.info(f"부산 데이터 파일({BUSAN_DATA_PATH.name})을 찾을 수 없습니다.")
+        else:
+            btop = build_top3(bdf, start, end, mode)  # 위에서 고른 기간·순위 기준을 부산에도 똑같이 적용
+            if btop.empty:
+                st.info("선택한 기간에 부산 데이터가 없습니다.")
+            else:
+                bwide = btop.pivot(index=["지역", "인근지하철역명"], columns="순위", values="업종").reset_index()
+                bwide = bwide.rename(columns={"인근지하철역명": "인근역"})
+                tbl_cols = ["지역"] + (["인근역"] if SHOW_BUSAN_STATION else []) + ["1위", "2위", "3위"]
+                q_b = st.text_input("부산 지역 이름 검색", "", key="busan_search")
+                if q_b:
+                    bwide = bwide[bwide["지역"].str.contains(q_b)]
+                bwide = bwide.sort_values("지역").reset_index(drop=True)
+                st.dataframe(bwide[tbl_cols].style.map(color_cell, subset=["1위", "2위", "3위"]),
+                             use_container_width=True, height=600, hide_index=True)
+                st.caption(BUSAN_TABLE_CAPTION)
 
 # ── 3. 전체 지도 (pydeck) ──
 with tab3:
@@ -227,6 +274,7 @@ with tab3:
 # ── 공공누리 출처표시: 짧은 안내 + 홈 화면 링크 (전체 출처표시는 홈 화면 하단에 있음) ──
 st.markdown("---")
 st.caption(COPYRIGHT_SHORT)
+st.caption(BUSAN_SOURCE_CAPTION)
 try:
     st.page_link("pages/home.py", label="데이터 출처 확인하기 (홈 화면)", icon="📄")
 except Exception:  # 이 페이지만 단독 실행해서 홈 페이지가 없을 때는 링크만 생략
