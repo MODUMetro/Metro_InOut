@@ -5,11 +5,12 @@ import pydeck as pdk
 import os
 from pathlib import Path
 import sys
+import re
 
-from settings import PARQUET_PATH, METRO_PATH_SEOUL, TRANSER_INFORMATION, SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, SUBWAY_COLORS
+from settings import PARQUET_PATH, METRO_PATH_SEOUL, TRANSER_INFORMATION, SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, SUBWAY_COLORS, LINE_NAME_MAP, LINE_NAME_REGEX_MAP
+from util.utils import block_right_click_render_pydeck
 
 st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide")
-from util.utils import block_right_click_render_pydeck
 
 # ==========================================
 # 전체 페이지 마우스 우클릭 차단 스크립트 추가
@@ -24,6 +25,8 @@ COL_LON = '경도'
 COL_LINE = '호선명'
 COL_BOARD_DETAIL = '승차_상세'
 COL_ALIGHT_DETAIL = '하차_상세'
+LIGHT_DAY_TIME_START = 6
+LIGHT_DAY_TIME_END = 18
 
 # 파일 로드 함수 통합 (CSV/Parquet 및 인코딩 자동 처리)
 @st.cache_data
@@ -43,14 +46,24 @@ def load_file_data(file_source):
         source = file_source
 
     if suffix == '.parquet':
-        return pd.read_parquet(source)    
+        df = pd.read_parquet(source)    
     elif suffix == '.csv':
         try:
-            return pd.read_csv(source, encoding='utf-8')
+            df = pd.read_csv(source, encoding='utf-8')
         except UnicodeDecodeError:
-            return pd.read_csv(source, encoding='cp949')
+            df = pd.read_csv(source, encoding='cp949')
     else:
         raise ValueError("지원하지 않는 파일 형식입니다.")
+        
+    # 노선명 매핑 (settings.py의 LINE_NAME_MAP 사용. 예: 일산선 -> 3호선)
+    if COL_LINE in df.columns: # 
+        df[COL_LINE] = df[COL_LINE].replace(LINE_NAME_MAP)
+
+        # 정규식 매핑 (9호선 2단계, 3단계 -> 9호선으로 통일)
+        for pattern, replacement in LINE_NAME_REGEX_MAP:
+            df[COL_LINE] = df[COL_LINE].str.replace(pattern, replacement, regex=True)
+        
+    return df
 
 st.title("🚇 지하철 시간대별 유동인구 탐색 대시보드")
 st.markdown(TRANSER_INFORMATION)
@@ -80,6 +93,14 @@ if df is not None:
     )
     st.sidebar.markdown("---")
     
+    # 호선별로 조회하는 드롭다운 메뉴 추가
+    if COL_LINE in df.columns:
+        # '전체' 옵션을 맨 앞에 추가하고, 유니크한 호선명을 가나다순 정렬
+        line_list = ["전체"] + sorted(df[COL_LINE].dropna().unique().tolist())
+        selected_line = st.sidebar.selectbox("노선 선택", line_list)
+    else:
+        selected_line = "전체"
+    
     if '사용월' in df.columns:
         month_list = sorted(df['사용월'].astype(str).unique().tolist(), reverse=True)
         selected_month = st.sidebar.selectbox("사용월 선택", month_list)
@@ -98,6 +119,11 @@ if df is not None:
         
         # 상수 변수 적용
         filtered_df = df[df['사용월'].astype(str) == selected_month]
+        
+        # 특정 호선을 선택했을 경우 해당 호선만 필터링
+        if selected_line != "전체":
+            filtered_df = filtered_df[filtered_df[COL_LINE] == selected_line]
+            
         result_df = filtered_df[[COL_LINE, COL_STATION, selected_board, selected_alight]].copy()
         
         result_df[selected_board] = pd.to_numeric(result_df[selected_board].astype(str).str.replace(',', ''), errors='coerce').fillna(0).astype(int)
@@ -201,6 +227,20 @@ if df is not None:
             coord_df = load_file_data(METRO_PATH_SEOUL)
 
             if coord_df is not None:
+
+                # 시간대에 따른 지도 테마 동적 변경 로직
+                # "08시-09시 승차인원" 등의 텍스트에서 앞의 숫자(8)만 추출
+                hour_match = re.search(r'(\d+)시', selected_board)
+                if hour_match:
+                    hour = int(hour_match.group(1))
+                    # 06시 ~ 18시 사이는 밝은 낮 테마, 그 외는 어두운 밤 테마
+                    if LIGHT_DAY_TIME_START <= hour < LIGHT_DAY_TIME_END:
+                        dynamic_map_style = pdk.map_styles.LIGHT 
+                    else:
+                        dynamic_map_style = pdk.map_styles.DARK 
+                else: # 예외 발생 시 기본 어두운 테마
+                    dynamic_map_style = pdk.map_styles.DARK 
+
                 if COL_STATION_ORIGIN in coord_df.columns and COL_STATION not in coord_df.columns:
                     coord_df = coord_df.rename(columns={COL_STATION_ORIGIN: COL_STATION})
                 
@@ -243,6 +283,7 @@ if df is not None:
                     r = pdk.Deck(
                         layers=[layer],
                         initial_view_state=view_state,
+                        map_style=dynamic_map_style, # 시간때별 배경 설정 테마
                         tooltip={
                             "html": f"<b>{{{COL_STATION}}}</b><br/>선택시간 탑승: {{board_count_str}}명<br/>선택시간 하차: {{alight_count_str}}명",
                             "style": {"color": "white"}
