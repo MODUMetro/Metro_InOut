@@ -39,6 +39,7 @@ DATA_PATH = RESOURCE_DIR / "seoul_monthly_station_ridership_filled_nearest.csv"
 COORD_PATH = RESOURCE_DIR / "coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
 METRO_PATH_SEOUL = RESOURCE_DIR / "seoul_metro_coordinates.csv"
 BUSAN_DATA_PATH = RESOURCE_DIR / "busan_commercial.csv"  # 부산 TOP3용: 기준년월, 행정동, 인근지하철역명, 업종, 매출액(=소비매출 월별 일평균), 이용건수
+BUSAN_COORD_PATH = RESOURCE_DIR / "busan_coordinate.csv"  # 부산 지도용: 행정동 중심 좌표(구 이름 포함)  ← 이 줄 추가
 
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
@@ -128,6 +129,16 @@ COPYRIGHT_SHORT = (
     "가공·분석한 결과입니다. "
     "데이터별 저작권자, 제공기관 및 출처는 홈 화면 하단에서 확인하실 수 있습니다."
 )
+
+# 지하철 승하차 인원 페이지(subway_app.py) 하단 출처표시
+COPYRIGHT_SUBWAY = (
+    "이 화면은 서울특별시가 저작권을 보유하고 제공하는 "
+    "'서울시 지하철 호선별 역별 시간대별 승하차 인원 정보'(2015년 공개)를 이용하였으며, "
+    "해당 저작물은 [서울 열린데이터광장](https://data.seoul.go.kr)에서 다운받으실 수 있습니다. "
+    "예측값과 순위는 원본 데이터를 가공·분석한 결과이며, "
+    "서울특별시의 공식 수치나 분석 결과가 아니고 서울특별시가 후원하거나 보증하는 것도 아닙니다."
+)
+
 
 # commercial_top3.py 안내 문구
 TOP3_INTRO_CAPTION = (
