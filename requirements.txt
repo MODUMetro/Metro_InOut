@@ -114,3 +114,4 @@ xmltodict==1.0.4
 koreanize-matplotlib
 pytz==2024.1
 python-dotenv
+geopandas
