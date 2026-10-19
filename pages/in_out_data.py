@@ -10,14 +10,7 @@ import re
 from settings import PARQUET_PATH, METRO_PATH_SEOUL, TRANSER_INFORMATION, SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, SUBWAY_COLORS, LINE_NAME_MAP, LINE_NAME_REGEX_MAP
 from util.utils import block_right_click_render_pydeck, hide_sidebar, move_scroll_up
 
-st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide", initial_sidebar_state="collapsed")
-
 # ==========================================
-# 전체 페이지 마우스 우클릭 차단 및 사이드바 숨김
-block_right_click_render_pydeck()
-hide_sidebar()
-# ==========================================
-
 # 자주 사용하는 텍스트 상수 지정
 COL_STATION_ORIGIN = '역명'
 COL_STATION = '지하철역'
@@ -28,6 +21,16 @@ COL_BOARD_DETAIL = '승차_상세'
 COL_ALIGHT_DETAIL = '하차_상세'
 LIGHT_DAY_TIME_START = 6
 LIGHT_DAY_TIME_END = 18
+PAGE_TITLE = '내 매장 골든타임 찾기'
+# ==========================================
+
+st.set_page_config(page_title=PAGE_TITLE, layout="wide", initial_sidebar_state="collapsed")
+
+# ==========================================
+# 전체 페이지 마우스 우클릭 차단 및 사이드바 숨김
+block_right_click_render_pydeck()
+hide_sidebar()
+# ==========================================
 
 # 파일 로드 함수 통합 (CSV/Parquet 및 인코딩 자동 처리)
 @st.cache_data
@@ -66,9 +69,9 @@ def load_file_data(file_source):
         
     return df
 
-# 1. 앵커 태그를 상단에 배치하고 홈 버튼 추가
+# 앵커 태그를 상단에 배치하고 홈 버튼 추가
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
-st.title("🚇 지하철 시간대별 유동인구 탐색")
+st.title("🚇 내 타겟 고객이 몰리는 골든타임 역 찾기")
 st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
 st.markdown(TRANSER_INFORMATION)
 
@@ -101,12 +104,12 @@ if df is not None:
     # [첫 번째 줄] - 시각화 모드, 사용월
     col1, col2 = st.columns(2)
     with col1:
-        view_mode = st.selectbox("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK])
+        view_mode = st.pills("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK])
     
     with col2:
         if '사용월' in df.columns:
             month_list = sorted(df['사용월'].astype(str).unique().tolist(), reverse=True)
-            selected_month = st.selectbox("📅 사용월 선택", month_list)
+            selected_month = st.selectbox("사용월 선택", month_list)
         else:
             st.error("데이터에 '사용월' 컬럼이 없습니다.")
             st.stop()
@@ -116,7 +119,7 @@ if df is not None:
     with col3:
         if COL_LINE in df.columns:
             line_list = ["전체"] + sorted(df[COL_LINE].dropna().unique().tolist())
-            selected_line = st.selectbox("🛤️ 노선 선택", line_list)
+            selected_line = st.selectbox("노선 선택", line_list)
         else:
             selected_line = "전체"
             
@@ -131,7 +134,7 @@ if df is not None:
     st.markdown("<br>", unsafe_allow_html=True)
     
     # 메인 화면을 가로지르는 큼직한 버튼
-    execute_btn = st.button("조회 실행 🚀", use_container_width=True, type="primary")
+    execute_btn = st.button("조회 실행", use_container_width=True, type="primary")
     st.markdown("---")
 
     # ==========================================

@@ -17,7 +17,7 @@ st.page_link("pages/in_out_data.py", label="유동인구 분석 컨설팅 시작
 st.markdown("---")
 
 st.subheader("제2의 연트럴파크, 저평가 우량 상권 선점하기")
-st.write("권리금이 오르기 전에 선점하세요. 철도 지하화 버프를 받았을 때 상권 가치가 폭발할 흙 속의 진주 같은 입지를 AI가 예측합니다.")
+st.write("권리금이 오르기 전에 선점하세요. 특정 이슈로 폭발한 상권 사례")
 st.page_link("pages/under_ground.py", label="상권 폭발 잠재력 시뮬레이터", icon="📈")
 
 st.markdown("---")
@@ -37,12 +37,12 @@ secret_key = st.sidebar.text_input(" ", type="password", label_visibility="colla
 st.markdown("---")
 
 
-with st.expander(f"{COPYRIGHT_FULL}"):
-    st.caption(BUSAN_SOURCE_CAPTION) 
-    
-    # 안내문(label)이 아예 안 보이도록 collapsed 처리한 비밀번호 입력창
-    secret_key = st.text_input("Admin Key", type="password", label_visibility="collapsed")
+st.caption(COPYRIGHT_FULL)
+st.caption(BUSAN_SOURCE_CAPTION)
 
-    # ML 모델 성능 비교 대시보드 보는 방법, 
-    if secret_key == "qwer": 
-        st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
+# 안내문(label)이 아예 안 보이도록 collapsed 처리한 비밀번호 입력창
+secret_key = st.text_input("Admin Key", type="password", label_visibility="collapsed")
+
+# ML 모델 성능 비교 대시보드 보는 방법, 
+if secret_key == "qwer": 
+    st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
