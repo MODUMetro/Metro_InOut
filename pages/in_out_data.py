@@ -8,13 +8,14 @@ import sys
 import re
 
 from settings import PARQUET_PATH, METRO_PATH_SEOUL, TRANSER_INFORMATION, SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, SUBWAY_COLORS, LINE_NAME_MAP, LINE_NAME_REGEX_MAP
-from util.utils import block_right_click_render_pydeck
+from util.utils import block_right_click_render_pydeck, hide_sidebar, move_scroll_up
 
-st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide")
+st.set_page_config(page_title="지하철 승하차 조회 대시보드", layout="wide", initial_sidebar_state="collapsed")
 
 # ==========================================
-# 전체 페이지 마우스 우클릭 차단 스크립트 추가
+# 전체 페이지 마우스 우클릭 차단 및 사이드바 숨김
 block_right_click_render_pydeck()
+hide_sidebar()
 # ==========================================
 
 # 자주 사용하는 텍스트 상수 지정
@@ -65,62 +66,79 @@ def load_file_data(file_source):
         
     return df
 
-st.title("🚇 지하철 시간대별 유동인구 탐색 대시보드")
+# 1. 앵커 태그를 상단에 배치하고 홈 버튼 추가
+st.markdown('<div id="top"></div>', unsafe_allow_html=True)
+st.title("🚇 지하철 시간대별 유동인구 탐색")
+st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
 st.markdown(TRANSER_INFORMATION)
 
-# ==========================================
-# 프로젝트 루트 경로 추가 및 기본 데이터 로드
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-st.sidebar.header("📁 데이터 상태")
-df = load_file_data(PARQUET_PATH)
-
-if df is not None:
-    st.sidebar.success(f"✅ 기본 데이터 자동 로드 완료")
-else:
-    st.sidebar.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {PARQUET_PATH}")
+# ==========================================
+# 데이터 로드
+# ==========================================
+with st.expander("📁 데이터 로드 및 상태 확인 (클릭해서 열기)", expanded=False):
+    # 파일 업로더
+    uploaded_file = st.file_uploader("기본 파일 외에 다른 파일을 보시려면 업로드하세요", type=['csv', 'parquet'])
+    
+    if uploaded_file is not None:
+        df = load_file_data(uploaded_file)
+        st.success("✅ 새로운 파일 로드 완료")
+    else:
+        df = load_file_data(PARQUET_PATH)
+        if df is not None:
+            st.success(f"✅ 기본 데이터 자동 로드 완료")
+        else:
+            st.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {PARQUET_PATH}")
 
 # ==========================================
-
-# df가 정상적으로 로드되었을 때만 대시보드 로직 실행
+# 검색 조건 컨트롤 패널 (사이드바에서 메인 본문으로 이동)
+# ==========================================
 if df is not None:
-    st.sidebar.markdown("---")
-    st.sidebar.header("🔍 검색 조건 설정")
+    st.markdown("### 🔍 분석 조건 설정")
     
-    view_mode = st.sidebar.selectbox(
-        "📊 시각화 모드 선택", 
-        [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK]
-    )
-    st.sidebar.markdown("---")
+    # UI 구성을 위해 화면을 여러 칸(Column)으로 나눕니다.
+    # [첫 번째 줄] - 시각화 모드, 사용월
+    col1, col2 = st.columns(2)
+    with col1:
+        view_mode = st.selectbox("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK])
     
-    # 호선별로 조회하는 드롭다운 메뉴 추가
-    if COL_LINE in df.columns:
-        # '전체' 옵션을 맨 앞에 추가하고, 유니크한 호선명을 가나다순 정렬
-        line_list = ["전체"] + sorted(df[COL_LINE].dropna().unique().tolist())
-        selected_line = st.sidebar.selectbox("노선 선택", line_list)
-    else:
-        selected_line = "전체"
-    
-    if '사용월' in df.columns:
-        month_list = sorted(df['사용월'].astype(str).unique().tolist(), reverse=True)
-        selected_month = st.sidebar.selectbox("사용월 선택", month_list)
-    else:
-        st.error("데이터에 '사용월' 컬럼이 없습니다.")
-        st.stop()
-        
+    with col2:
+        if '사용월' in df.columns:
+            month_list = sorted(df['사용월'].astype(str).unique().tolist(), reverse=True)
+            selected_month = st.selectbox("📅 사용월 선택", month_list)
+        else:
+            st.error("데이터에 '사용월' 컬럼이 없습니다.")
+            st.stop()
+            
+    # [두 번째 줄] - 노선, 승차, 하차 시간대
+    col3, col4, col5 = st.columns(3)
+    with col3:
+        if COL_LINE in df.columns:
+            line_list = ["전체"] + sorted(df[COL_LINE].dropna().unique().tolist())
+            selected_line = st.selectbox("🛤️ 노선 선택", line_list)
+        else:
+            selected_line = "전체"
+            
     board_cols = [col for col in df.columns if '승차' in col]
     alight_cols = [col for col in df.columns if '하차' in col]
     
-    selected_board = st.sidebar.selectbox("시간대 탑승 선택", board_cols)
-    selected_alight = st.sidebar.selectbox("시간대 하차 선택", alight_cols)
+    with col4:
+        selected_board = st.selectbox("시간대 탑승 선택", board_cols)
+    with col5:
+        selected_alight = st.selectbox("시간대 하차 선택", alight_cols)
     
-    if st.sidebar.button("조회 실행 🚀"):
-        st.markdown(f"### 📌 [{selected_month}] 조회 결과")
-        
-        # 상수 변수 적용
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 메인 화면을 가로지르는 큼직한 버튼
+    execute_btn = st.button("조회 실행 🚀", use_container_width=True, type="primary")
+    st.markdown("---")
+
+    # ==========================================
+    # 조회 실행 로직 및 결과 렌더링
+    # ==========================================
+    if execute_btn:        
         filtered_df = df[df['사용월'].astype(str) == selected_month]
-        
-        # 특정 호선을 선택했을 경우 해당 호선만 필터링
         if selected_line != "전체":
             filtered_df = filtered_df[filtered_df[COL_LINE] == selected_line]
             
@@ -139,9 +157,6 @@ if df is not None:
             COL_BOARD_DETAIL: lambda x: '<br>'.join(x),
             COL_ALIGHT_DETAIL: lambda x: '<br>'.join(x)
         }).reset_index()
-        
-        st.dataframe(result_df[[COL_LINE, COL_STATION, selected_board, selected_alight]], use_container_width=True, hide_index=True)
-        st.markdown("---")
         
         if view_mode == SHOW_CIRCLE_AND_BAR:
             st.subheader("🏆 환승역 통합 Top 10 비중 (원형 차트)")
@@ -219,6 +234,11 @@ if df is not None:
                 st.plotly_chart(fig_bar_board, use_container_width=True)
             with col4:
                 st.plotly_chart(fig_bar_alight, use_container_width=True)
+            
+            # 표를 그래프 아래로 이동
+            st.markdown("---")
+            st.subheader(f"📌 [{selected_month}] 조회 결과")
+            st.dataframe(result_df[[COL_LINE, COL_STATION, selected_board, selected_alight]], use_container_width=True, hide_index=True)
     
         elif view_mode == SHOW_PYDECK:
             st.subheader("유동인구 3D 지도")        
@@ -296,17 +316,25 @@ if df is not None:
                     )
 
                     st.pydeck_chart(r, use_container_width=True)
+
+                    # 표를 3D 지도 아래로 이동
+                    st.markdown("---")
+                    st.subheader("📋 데이터 표")
+                    st.dataframe(result_df[[COL_LINE, COL_STATION, selected_board, selected_alight]], use_container_width=True, hide_index=True)
                 else:
                     st.error("⚠️ 병합된 데이터에 매핑할 수 있는 좌표가 없습니다.")
                     st.caption(f"- 승하차 역명 예시: {grouped_df[COL_STATION].head(3).tolist()}")
+                    
+                    st.markdown("---")
+                    st.subheader("📋 데이터 표")
+                    st.dataframe(result_df[[COL_LINE, COL_STATION, selected_board, selected_alight]], use_container_width=True, hide_index=True)
                     if COL_STATION in coord_df.columns:
                         st.caption(f"- 좌표 역명 예시: {coord_df[COL_STATION].head(3).tolist()}")
+                        
             else:
                 st.warning(f"⚠️ 폴더 내에 {METRO_PATH_SEOUL} 파일을 찾을 수 없습니다. 파일명과 위치를 다시 확인해주세요.")
 
-
-# 기본 파일 외에 다른 파일을 보고 싶을 때를 대비한 수동 업로더
-uploaded_file = st.sidebar.file_uploader("다른 파일을 보시려면 업로드하세요", type=['csv', 'parquet'])
-if uploaded_file is not None:
-    df = load_file_data(uploaded_file)
-    st.sidebar.success("✅ 새로운 파일 로드 완료")
+# ==========================================
+# 스크롤 맨 위로 올리기 버튼
+# ==========================================
+move_scroll_up()

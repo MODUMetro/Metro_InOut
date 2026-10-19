@@ -24,3 +24,51 @@ def block_right_click_render_pydeck():
         height=0,
         width=0
     )
+
+def hide_sidebar():
+    """메인 홈 화면 등에서 사이드바와 햄버거 메뉴를 완전히 숨기는 기능"""
+    st.markdown(
+        """
+        <style>
+            /* 좌측 사이드바 영역 자체를 완전히 숨김 */
+            [data-testid="stSidebar"] { display: none !important; }
+            /* 모바일 화면 상단의 사이드바 열기(햄버거) 버튼 숨김 */
+            [data-testid="collapsedControl"] { display: none !important; }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+def move_scroll_up():
+    """ 스크롤 맨 위로 올리기 버튼 """
+    st.markdown(
+        """
+        <style>
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #ff4b4b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        .scroll-to-top:hover {
+            background-color: #ff3333;
+            color: white;
+        }
+        </style>
+        <a href="#top" class="scroll-to-top" title="맨 위로">↑</a>
+        """,
+        unsafe_allow_html=True
+    )

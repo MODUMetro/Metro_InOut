@@ -40,7 +40,7 @@ page_top3 = st.Page("pages/commercial_top3.py", title="🏙️ 지역별 TOP3 �
 
 
 # 2. 사이드바 네비게이션 메뉴 구성
-pg = st.navigation([page_main, page_inout, page_nowon, page_subway, page_comparison, page_top3])
+pg = st.navigation([page_main, page_inout, page_nowon, page_subway, page_comparison, page_top3], position="hidden")
 
 # 3. 구성한 페이지 묶음을 실행
 pg.run()
