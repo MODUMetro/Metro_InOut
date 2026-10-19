@@ -227,6 +227,11 @@ if df is not None:
             coord_df = load_file_data(METRO_PATH_SEOUL)
 
             if coord_df is not None:
+                carto_api_key = os.getenv("CARTO_API_KEY")
+
+                # CARTO 벡터 타일 스타일 URL 정의 (API 키 포함)
+                CARTO_LIGHT = f"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json?api_key={carto_api_key}"
+                CARTO_DARK = f"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json?api_key={carto_api_key}"
 
                 # 시간대에 따른 지도 테마 동적 변경 로직
                 # "08시-09시 승차인원" 등의 텍스트에서 앞의 숫자(8)만 추출
@@ -235,11 +240,11 @@ if df is not None:
                     hour = int(hour_match.group(1))
                     # 06시 ~ 18시 사이는 밝은 낮 테마, 그 외는 어두운 밤 테마
                     if LIGHT_DAY_TIME_START <= hour < LIGHT_DAY_TIME_END:
-                        dynamic_map_style = pdk.map_styles.LIGHT 
+                        dynamic_map_style = CARTO_LIGHT
                     else:
-                        dynamic_map_style = pdk.map_styles.DARK 
+                        dynamic_map_style = CARTO_DARK 
                 else: # 예외 발생 시 기본 어두운 테마
-                    dynamic_map_style = pdk.map_styles.DARK 
+                    dynamic_map_style = CARTO_DARK
 
                 if COL_STATION_ORIGIN in coord_df.columns and COL_STATION not in coord_df.columns:
                     coord_df = coord_df.rename(columns={COL_STATION_ORIGIN: COL_STATION})

@@ -28,6 +28,8 @@ import plotly.express as px
 import pydeck as pdk
 import streamlit as st
 
+import os
+
 from settings import (
     DATA_PATH, COORD_PATH, BUSAN_DATA_PATH, BUSAN_COORD_PATH,
     TOP3_SEOUL_SOURCE_CAPTION, TOP3_INTRO_CAPTION, TOP3_REGION_CAPTION,
@@ -497,13 +499,20 @@ with tab3:
         view = pdk.ViewState(latitude=view_lat, longitude=view_lon, zoom=zoom,
                              pitch=pitch, bearing=0, min_zoom=MAP_MIN_ZOOM,
                              max_zoom=MAP_MAX_ZOOM)
+
+        # --- CARTO API 키 적용 추가 부분 ---
+        carto_api_key = os.getenv("CARTO_API_KEY")
+        dynamic_map_style = f"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json?api_key={carto_api_key}"
+        # -----------------------------------
+        
         deck = pdk.Deck(
-            layers=[layer], map_style="light", initial_view_state=view,
+            layers=[layer], map_style=dynamic_map_style, initial_view_state=view,
             tooltip={"html": "<b>{city} · {name}</b><br/>🚇 {station}"
                              "<br/>1위 {r1}<br/>2위 {r2}<br/>3위 {r3}"
                              f"<br/><b>{rank_pick} {{sales_label}}: {{sales_txt}}</b>",
                      "style": {"backgroundColor": "white", "color": "#222", "fontSize": "13px"}},
         )
+
         map_key = f"top3_map_both_{city}_{st.session_state['top3_map_reset']}"
         map_box = (st.container(key=map_key) if "key" in inspect.signature(st.container).parameters
                    else st.container())
