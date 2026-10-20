@@ -46,7 +46,8 @@ BUSAN_DATA_PATH = RESOURCE_DIR / "busan_commercial.csv"
 # 부산 지도용: 행정동 중심 좌표(구 이름 포함)
 BUSAN_COORD_PATH = RESOURCE_DIR / "busan_coordinate.csv"  
 # 부산 상하차 인원 반영된 파일 (출처: 부산광역시 Big-데이터웨이브 )
-BUSAN_DATA_PATH = RESOURCE_DIR / "busan_metro_Line_Station_Boarding_Alighting_Information.csv"
+BUSAN_METRO_BOARDING_DATA_PATH = RESOURCE_DIR / "busan_metro_Line_Station_Boarding_Alighting_Information.csv"
+BUSAN_METRO_BOARDING_DATA_PARQUET_PATH = RESOURCE_DIR / "busan_metro_Line_Station_Boarding_Alighting_Information.parquet"
 # 부산 지하철역 위치 위도, 경도 반영된 파일 (출처: 코레일 레일 포털)
 BUSAN_METRO_POSITION = RESOURCE_DIR / "busan_metro_coordinates.csv"
 

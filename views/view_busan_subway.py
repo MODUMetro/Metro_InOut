@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 # 설정 파일이 있다면 임포트 (여기서는 상수로 대체 가능)
-from settings import SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, BUSAN_DATA_PATH, BUSAN_METRO_POSITION
+from settings import SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, BUSAN_METRO_BOARDING_DATA_PATH, BUSAN_METRO_BOARDING_DATA_PARQUET_PATH, BUSAN_METRO_POSITION
 
 # ==========================================
 # 기본 상수 및 설정
@@ -19,10 +19,31 @@ def load_busan_data(file_path):
     """부산 승하차 데이터를 로드하고 '년월' 컬럼을 생성합니다."""
     if not os.path.exists(file_path):
         return None
+
+    if isinstance(file_path, (str, Path)):
+        if not os.path.exists(file_path):
+            return None
+        suffix = Path(file_path).suffix
+        source = file_path
+    else:
+        suffix = Path(file_path.name).suffix
+        source = file_path
+
     # 부산 데이터는 cp949 인코딩
-    df = pd.read_csv(file_path, encoding='cp949')
+    if suffix == '.parquet':
+        df = pd.read_parquet(source)    
+    elif suffix == '.csv':
+        try:
+            df = pd.read_csv(source, encoding='utf-8')
+        except UnicodeDecodeError:
+            df = pd.read_csv(source, encoding='cp949')
+    else:
+        # 지원하지 않는 파일 형식에 대한 에러 방지
+        raise ValueError("지원하지 않는 파일 형식입니다. csv 또는 parquet 파일을 업로드해주세요.")
+    
     # '2023-01-01' 형태에서 '2023-01' 추출
-    df['년월'] = df['년월일'].str.slice(0, 7)
+    if '년월일' in df.columns:
+        df['년월'] = df['년월일'].str.slice(0, 7)
     return df
 
 @st.cache_data
@@ -39,7 +60,7 @@ def render_busan():
     # 데이터 로드
     # ==========================================
     with st.expander("📁 부산 데이터 로드 상태 (클릭해서 열기)", expanded=False):
-        df = load_busan_data(BUSAN_DATA_PATH)
+        df = load_busan_data(BUSAN_METRO_BOARDING_DATA_PARQUET_PATH)
         coord_df = load_busan_coords(BUSAN_METRO_POSITION)
         
         if df is not None and coord_df is not None:
