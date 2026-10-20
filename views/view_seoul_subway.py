@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 from settings import PARQUET_PATH, METRO_PATH_SEOUL, TRANSER_INFORMATION, SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, SUBWAY_COLORS, LINE_NAME_MAP, LINE_NAME_REGEX_MAP
+from util.utils import load_common_data
 
 # ==========================================
 # 자주 사용하는 텍스트 상수 지정
@@ -21,30 +22,13 @@ LIGHT_DAY_TIME_END = 18
 # ==========================================
 
 @st.cache_data
-def load_file_data(file_source):
-    """파일 로드 함수 (CSV/Parquet 및 인코딩 자동 처리)"""
-    if file_source is None:
+def load_seoul_data(file_source):
+    # 공통 로더로 데이터 먼저 읽기
+    df = load_common_data(file_source)
+    if df is None:
         return None
         
-    if isinstance(file_source, (str, Path)):
-        if not os.path.exists(file_source):
-            return None
-        suffix = Path(file_source).suffix
-        source = file_source
-    else:
-        suffix = Path(file_source.name).suffix
-        source = file_source
-
-    if suffix == '.parquet':
-        df = pd.read_parquet(source)    
-    elif suffix == '.csv':
-        try:
-            df = pd.read_csv(source, encoding='utf-8')
-        except UnicodeDecodeError:
-            df = pd.read_csv(source, encoding='cp949')
-    else:
-        raise ValueError("지원하지 않는 파일 형식입니다.")
-        
+    # 서울만의 전처리 (호선명 매핑)
     if COL_LINE in df.columns:
         df[COL_LINE] = df[COL_LINE].replace(LINE_NAME_MAP)
         for pattern, replacement in LINE_NAME_REGEX_MAP:
@@ -64,17 +48,17 @@ def render_seoul():
         uploaded_file = st.file_uploader("기본 파일 외에 다른 파일을 보시려면 업로드하세요", type=['csv', 'parquet'], key='seoul_uploader')
         
         if uploaded_file is not None:
-            df = load_file_data(uploaded_file)
+            df = load_seoul_data(uploaded_file)
             st.success("✅ 새로운 파일 로드 완료")
         else:
-            df = load_file_data(PARQUET_PATH)
+            df = load_seoul_data(PARQUET_PATH)
             if df is not None:
                 st.success("✅ 기본 데이터 자동 로드 완료")
             else:
                 st.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {PARQUET_PATH}")
 
     if df is None:
-        return None, None, None
+        return None, None, None, None
 
     # ==========================================
     # 검색 조건 컨트롤 패널
