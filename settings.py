@@ -30,26 +30,32 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # resource 폴더 설정
 RESOURCE_DIR = BASE_DIR / "resource"
+SEOUL_DATA_FOLDER = "seoul"
+BUSAN_DATA_FOLDER = "busan"
 
-CSV_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.csv"
-PARQUET_PATH = RESOURCE_DIR / "Subway_Line_Station_Boarding_Alighting_Information.parquet"
-MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
-MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
+# 서울지역 데이터 파일 경로
+CSV_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "Subway_Line_Station_Boarding_Alighting_Information.csv"
+PARQUET_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "Subway_Line_Station_Boarding_Alighting_Information.parquet"
 # 서울 상권 TOP3용: 기준년분기, 행정동, 행정동코드, 업종, 당월_매출_금액(=분기 추정매출),
 #                   인근지하철1~5 / 승하차인원1~5 / 승하차개월수1~5 (행정동 대표점 반경 800m, GTX 제외)
-DATA_PATH = RESOURCE_DIR / "seoul_monthly_station_ridership_filled_nearest.csv"
-COORD_PATH = RESOURCE_DIR / "coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
-METRO_PATH_SEOUL = RESOURCE_DIR / "seoul_metro_coordinates.csv"
+DATA_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_monthly_station_ridership_filled_nearest.csv"
+COORD_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_site_coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
+METRO_PATH_SEOUL = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_metro_coordinates.csv"
 
+# 부산지역 데이터 파일 경로
 # 부산 TOP3용: 기준년월, 행정동코드, 행정동명(구 포함), 구, 업종대분류, 평균이용금액, 평균이용건수, 인근지하철역
-BUSAN_DATA_PATH = RESOURCE_DIR / "busan_commercial.csv"
+BUSAN_DATA_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_commercial.csv"
 # 부산 지도용: 행정동 중심 좌표(구 이름 포함)
-BUSAN_COORD_PATH = RESOURCE_DIR / "busan_coordinate.csv"  
+BUSAN_COORD_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_coordinate.csv"  
 # 부산 상하차 인원 반영된 파일 (출처: 부산광역시 Big-데이터웨이브 )
-BUSAN_METRO_BOARDING_DATA_PATH = RESOURCE_DIR / "busan_metro_Line_Station_Boarding_Alighting_Information.csv"
-BUSAN_METRO_BOARDING_DATA_PARQUET_PATH = RESOURCE_DIR / "busan_metro_Line_Station_Boarding_Alighting_Information.parquet"
+BUSAN_METRO_BOARDING_DATA_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_metro_Line_Station_Boarding_Alighting_Information.csv"
+BUSAN_METRO_BOARDING_DATA_PARQUET_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER/ "busan_metro_Line_Station_Boarding_Alighting_Information.parquet"
 # 부산 지하철역 위치 위도, 경도 반영된 파일 (출처: 코레일 레일 포털)
-BUSAN_METRO_POSITION = RESOURCE_DIR / "busan_metro_coordinates.csv"
+BUSAN_METRO_POSITION = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_metro_coordinates.csv"
+
+# 머신러닝 학습결과 파일 경로
+MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
+MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
 
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
