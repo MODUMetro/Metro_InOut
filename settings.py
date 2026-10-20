@@ -40,9 +40,15 @@ MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
 DATA_PATH = RESOURCE_DIR / "seoul_monthly_station_ridership_filled_nearest.csv"
 COORD_PATH = RESOURCE_DIR / "coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
 METRO_PATH_SEOUL = RESOURCE_DIR / "seoul_metro_coordinates.csv"
+
 # 부산 TOP3용: 기준년월, 행정동코드, 행정동명(구 포함), 구, 업종대분류, 평균이용금액, 평균이용건수, 인근지하철역
 BUSAN_DATA_PATH = RESOURCE_DIR / "busan_commercial.csv"
-BUSAN_COORD_PATH = RESOURCE_DIR / "busan_coordinate.csv"  # 부산 지도용: 행정동 중심 좌표(구 이름 포함)
+# 부산 지도용: 행정동 중심 좌표(구 이름 포함)
+BUSAN_COORD_PATH = RESOURCE_DIR / "busan_coordinate.csv"  
+# 부산 상하차 인원 반영된 파일 (출처: 부산광역시 Big-데이터웨이브 )
+BUSAN_DATA_PATH = RESOURCE_DIR / "busan_metro_Line_Station_Boarding_Alighting_Information.csv"
+# 부산 지하철역 위치 위도, 경도 반영된 파일 (출처: 코레일 레일 포털)
+BUSAN_METRO_POSITION = RESOURCE_DIR / "busan_metro_coordinates.csv"
 
 HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
 LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
@@ -91,7 +97,9 @@ LINE_NAME_REGEX_MAP = [
 ]
 
 # 노선 공식 색상 세팅
-SUBWAY_COLORS = {
+
+# 서울/경기
+SUBWAY_COLORS = { 
     '1호선': '#0052A4', '2호선': '#00A84D', '3호선': '#EF7C1C', 
     '4호선': '#00A5DE', '5호선': '#996CAC', '6호선': '#CD7C2F', 
     '7호선': '#747F00', '8호선': '#E6186C', '9호선': '#BDB092',
@@ -103,6 +111,17 @@ SUBWAY_COLORS = {
     '수인선': '#FABE00', '신림선': '#6789CA', '안산선': '#00A5DE', 
     '우이신설선': '#B0CE18', '일산선': '#EF7C1C', '장항선': '#0052A4', '중앙선': '#77C4A3'
 }
+
+# 부산
+BUSAN_METRO_LINE_COLORS = { 
+    '1호선': '#F06A00',
+    '2호선': '#81BF48',
+    '3호선': '#BB8C00',
+    '4호선': '#2E67CE',
+    '부산김해경전철': '#875CAC',
+    '동해선': '#0054A6',
+}
+
 # ── 화면에 표시되는 안내/출처 문구 ──
 
 # 유동인구 데이터 분석
