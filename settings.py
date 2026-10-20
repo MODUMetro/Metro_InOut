@@ -170,10 +170,12 @@ TOP3_PILLAR_CAPTION = (
 )
 TOP3_DOT_CAPTION = "점은 각 행정동의 중심 위치이며 행정구역 경계가 아닙니다. 색은 선택한 순위의 업종입니다."
 TOP3_LEGEND_CAPTION = "범례의 괄호 안 숫자는 그 업종이 해당 순위인 지역의 수입니다. 점·기둥에 마우스를 올리면 1~3위가 표시됩니다."
+# OpenFreeMap 공개 지도 스타일을 사용합니다. API 키가 필요하지 않습니다.
+OPENFREEMAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron"
 MAP_ATTRIBUTION_CAPTION = (
-    "지도 배경: © [OpenStreetMap contributors]"
-    "(https://www.openstreetmap.org/copyright), "
-    "© [CARTO](https://carto.com/attribution/)"
+    "지도 배경: [OpenFreeMap](https://openfreemap.org/) · "
+    "© [OpenMapTiles](https://openmaptiles.org/) · "
+    "Data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)"
 )
 
 

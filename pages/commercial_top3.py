@@ -16,14 +16,13 @@
 """
 import inspect
 import math
-import os
 from zlib import crc32
 import pandas as pd
 import plotly.express as px
 import pydeck as pdk
 import streamlit as st
 from settings import (
-    DATA_PATH, COORD_PATH, BUSAN_DATA_PATH, BUSAN_COORD_PATH,
+    DATA_PATH, COORD_PATH, BUSAN_DATA_PATH, BUSAN_COORD_PATH, OPENFREEMAP_STYLE_URL,
     TOP3_SEOUL_SOURCE_CAPTION, TOP3_INTRO_CAPTION, TOP3_REGION_CAPTION,
     TOP3_REGION_CAPTION_BUSAN, TOP3_PILLAR_CAPTION, TOP3_DOT_CAPTION, TOP3_LEGEND_CAPTION, MAP_ATTRIBUTION_CAPTION,
     BUSAN_TABLE_CAPTION, BUSAN_SOURCE_CAPTION,
@@ -58,8 +57,6 @@ SEOUL_GU_BY_PREFIX = {
 # 전체 페이지 마우스 우클릭 차단 스크립트 추가
 block_right_click_render_pydeck()
 # ==========================================
-
-
 def validate_sales(df: pd.DataFrame, period_col: str, industry_col: str, sales_col: str, label: str, code_col: str = "행정동코드") -> pd.DataFrame:
     """중복과 잘못된 매출을 검사하며 원래 결측값은 유지합니다."""
     keys = [period_col, code_col, industry_col]
@@ -77,8 +74,6 @@ def validate_sales(df: pd.DataFrame, period_col: str, industry_col: str, sales_c
     df = df.copy()
     df[sales_col] = numbers
     return df
-
-
 def validate_coords(df: pd.DataFrame, label: str) -> pd.DataFrame:
     """잘못되거나 누락된 좌표만 지도 대상에서 제외합니다."""
     df = df.copy()
@@ -88,10 +83,7 @@ def validate_coords(df: pd.DataFrame, label: str) -> pd.DataFrame:
     if (~valid).any():
         st.warning(f"{label}: 좌표가 없거나 올바르지 않은 {int((~valid).sum()):,}개 지점은 지도에서 제외합니다.")
     return df.loc[valid].copy()
-
-
 @st.cache_data
-
 def load_top3_data() -> pd.DataFrame:
     """서울: 식별 키는 코드, 표시용 지역명은 별도 컬럼."""
     # 서울 행정동·업종별 행은 그대로 유지하고 매출 결측도 원본 상태로 읽음.
@@ -116,10 +108,7 @@ def load_top3_data() -> pd.DataFrame:
     info["지역"] = info["지역"].where(~still, info["지역"] + "[" + info["코드"] + "]")
     return df.drop(columns=["행정동"] + SEOUL_STATION_SLOTS).merge(
         info[["코드", "지역", "인근역"]], on="코드", how="left", validate="many_to_one")
-
-
 @st.cache_data
-
 def load_top3_coords() -> pd.DataFrame | None:
     if not COORD_PATH.exists():
         return None
@@ -145,10 +134,7 @@ def load_top3_coords() -> pd.DataFrame | None:
         raise ValueError("서울 좌표 파일에 중복 지역명이 있어. 코드가 포함된 좌표 파일을 사용해야 합니다")
     out = names.merge(coords[["지역", "위도", "경도"]], on="지역", how="left", validate="one_to_one")
     return validate_coords(out[["코드", "위도", "경도"]], "서울")
-
-
 @st.cache_data
-
 def load_busan_data() -> pd.DataFrame | None:
     if not BUSAN_DATA_PATH.exists():
         return None
@@ -174,13 +160,10 @@ def load_busan_data() -> pd.DataFrame | None:
         simple.where(simple.map(name_count).eq(1), code_name["지역_전체"])))
     df["지역"] = df["코드"].map(name_map)
     df["인근역_원본"] = df["인근지하철역"]
-    df["인근역"] = (df["인근지하철역"].str.replace(r"\(\d+호선\)$", "", regex=True)
+    df["인근역"] = (df["인근지하철역"].str.replace(r"\s*\(\d+호선\)\s*$", "", regex=True)
         .fillna(NO_STATION))
     return df[["기간", "코드", "지역", "지역_전체", "인근역", "인근역_원본", "업종", "매출액"]]
-
-
 @st.cache_data
-
 def load_busan_coords() -> pd.DataFrame | None:
     if not BUSAN_COORD_PATH.exists():
         return None
@@ -194,10 +177,7 @@ def load_busan_coords() -> pd.DataFrame | None:
     out = names.merge(c[["지역_전체", "lat", "lon"]], on="지역_전체", how="left", validate="one_to_one")
     out = out[["코드", "lat", "lon"]].rename(columns={"lat": "위도", "lon": "경도"})
     return validate_coords(out, "부산")
-
-
 @st.cache_data
-
 def load_gu_maps() -> tuple[dict, dict]:
     """구별 보기용 (서울 {코드: 자치구}, 부산 {코드: 구·군}).
     서울은 행정동코드 앞 5자리, 부산은 행정동명 맨 앞 단어로 판별. 서울에서 판별 못 한 코드는 값이 None."""
@@ -206,10 +186,7 @@ def load_gu_maps() -> tuple[dict, dict]:
     busan = {} if b is None else {
         c: str(n).split(" ")[0] for c, n in b.drop_duplicates("코드").set_index("코드")["지역_전체"].items()}
     return seoul, busan
-
-
 @st.cache_data
-
 def build_top3(df: pd.DataFrame, start: str, end: str, mode: str,
                agg: str = "sum", require_complete: bool = False) -> pd.DataFrame:
     """지역 식별은 코드로 하고 표시 이름은 별도 유지. 결측은 0으로 변경하지 않음."""
@@ -243,14 +220,10 @@ def build_top3(df: pd.DataFrame, start: str, end: str, mode: str,
     g = g.sort_values(["코드", key, "업종"], ascending=[True, False, True])
     g["순위"] = (g.groupby("코드").cumcount() + 1).astype(str) + "위"
     return g[g["순위"].isin(["1위", "2위", "3위"])].copy()
-
-
 def period_missing(df: pd.DataFrame, start: str, end: str) -> tuple[int, int]:
     """선택 기간의 (전체 행 수, 매출 결측 행 수). 집계에서 제외한 건수를 화면에 알리려고 씀."""
     d = df[(df["기간"] >= start) & (df["기간"] <= end)]
     return len(d), int(d["매출액"].isna().sum())
-
-
 def to_wide(top: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     ranks = ["1위", "2위", "3위"]
     if top.empty:
@@ -262,8 +235,6 @@ def to_wide(top: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     # 수치 NaN은 보존하며, 이 치환은 순위표의 표시용 문자열에만 적용.
     wide[ranks] = wide[ranks].fillna(NO_INFO)  # 표시용 문자열만 치환, 수치 NaN은 유지
     return wide.sort_values("지역").reset_index(drop=True)
-
-
 def color_cell(v):
     if not isinstance(v, str) or not v:
         return ""
@@ -271,27 +242,19 @@ def color_cell(v):
         return "background-color: #eeeeee; color: #888888"
     hue = crc32(v.split(" (")[0].encode()) % 360
     return f"background-color: hsl({hue},55%,82%); color: black"
-
-
 def hex_to_rgb(h: str) -> list[int]:
     h = h.lstrip("#")
     return [int(h[i:i + 2], 16) for i in (0, 2, 4)]
-
-
 def station_label(s) -> str:
     """툴팁용 역 이름 하나. '역'으로 끝나거나 '없음'이 들어 있으면 그대로, 아니면 '역'을 붙임."""
     s = str(s)
     return s if (s.endswith("역") or "없음" in s) else s + "역"
-
-
 def stations_text(s) -> str:
     """'강남, 역삼' 처럼 쉼표로 이어진 인근역 문자열을 '강남역, 역삼역'으로."""
     s = str(s)
     if s == NO_STATION:
         return s
     return ", ".join(station_label(x) for x in s.split(", "))
-
-
 def render_region_view(top_df: pd.DataFrame, key: str, default_region: str | None, unit: str, region_caption: str):
     """'지역 하나 보기' 화면 한 벌 (서울/부산 하위 탭에서 같이 씀).
     unit: '억'이면 매출을 억 원으로, '원'이면 그대로(부산 평균이용금액) 막대로 보여줌."""
@@ -347,14 +310,10 @@ st.title("가장 지갑을 많이 여는 지하철역은?")
 st.caption(TOP3_INTRO_CAPTION)
 st.session_state.setdefault("top3_map_city", "서울")
 st.session_state.setdefault("top3_map_reset", 0)
-
-
 def set_map_city(city_name: str):
     """기간 또는 도시 선택 변경을 지도 초기 시점에 반영합니다."""
     st.session_state["top3_map_city"] = city_name
     st.session_state["top3_map_reset"] = st.session_state.get("top3_map_reset", 0) + 1
-
-
 c1, c2, c3 = st.columns([2, 3, 3])
 with c1:
     mode = st.radio("순위 기준", ["매출 규모", "특화도"], horizontal=True,
@@ -590,12 +549,10 @@ with tab3:
         view = pdk.ViewState(latitude=view_lat, longitude=view_lon, zoom=zoom,
                              pitch=pitch, bearing=0, min_zoom=MAP_MIN_ZOOM,
                              max_zoom=MAP_MAX_ZOOM)
-        # --- CARTO API 키 적용 추가 부분 ---
-        carto_api_key = os.getenv("CARTO_API_KEY")
-        dynamic_map_style = f"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json?key={carto_api_key}"
-        # -----------------------------------
+        # API 키 없이 사용하는 OpenFreeMap 지도 스타일을 지정합니다.
         deck = pdk.Deck(
-            layers=[layer], map_style=dynamic_map_style, initial_view_state=view,
+            layers=[layer], map_provider="maplibre", map_style=OPENFREEMAP_STYLE_URL,
+            initial_view_state=view,
             tooltip={"html": "<b>{city} · {name}</b><br/>🚇 {station}"
                              "<br/>1위 {r1}<br/>2위 {r2}<br/>3위 {r3}"
                              f"<br/><b>{rank_pick} {{sales_label}}: {{sales_txt}}</b>",
