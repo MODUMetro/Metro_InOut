@@ -74,7 +74,7 @@ def render_seoul():
                 st.warning(f"⚠️ 폴더에 기본 파일이 없습니다. 경로를 확인해주세요: {PARQUET_PATH}")
 
     if df is None:
-        return None, None, None
+        return None, None, None, None
 
     # ==========================================
     # 검색 조건 컨트롤 패널
