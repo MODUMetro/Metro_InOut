@@ -1,5 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import os
+import pandas as pd
+from pathlib import Path
 
 def block_right_click_render_pydeck():
     """st.pydeck_chart 렌더링 후 우클릭(컨텍스트 메뉴)을 원천 차단합니다."""
@@ -72,3 +75,30 @@ def move_scroll_up():
         """,
         unsafe_allow_html=True
     )
+
+@st.cache_data
+def load_common_data(file_path):
+    """CSV 및 Parquet 파일을 공통으로 로드하는 유틸리티 함수"""
+    if file_path is None:
+        return None
+
+    if isinstance(file_path, (str, Path)):
+        if not os.path.exists(file_path):
+            return None
+        suffix = Path(file_path).suffix
+        source = file_path
+    else:
+        suffix = Path(file_path.name).suffix
+        source = file_path
+        
+    if suffix == '.parquet':
+        df = pd.read_parquet(source)    
+    elif suffix == '.csv':
+        try:
+            df = pd.read_csv(source, encoding='utf-8')
+        except UnicodeDecodeError:
+            df = pd.read_csv(source, encoding='cp949')
+    else:
+        raise ValueError("지원하지 않는 파일 형식입니다. csv 또는 parquet 파일을 업로드해주세요.")
+    
+    return df

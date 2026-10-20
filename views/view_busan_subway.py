@@ -6,6 +6,7 @@ from pathlib import Path
 
 # 설정 파일이 있다면 임포트 (여기서는 상수로 대체 가능)
 from settings import SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, BUSAN_METRO_BOARDING_DATA_PATH, BUSAN_METRO_BOARDING_DATA_PARQUET_PATH, BUSAN_METRO_POSITION
+from util.utils import load_common_data
 
 # ==========================================
 # 기본 상수 및 설정
@@ -17,29 +18,10 @@ COL_ALIGHT = '하차'
 @st.cache_data
 def load_busan_data(file_path):
     """부산 승하차 데이터를 로드하고 '년월' 컬럼을 생성합니다."""
-    if not os.path.exists(file_path):
+    # 1. 공통 로더로 데이터 먼저 읽기
+    df = load_common_data(file_path)
+    if df is None:
         return None
-
-    if isinstance(file_path, (str, Path)):
-        if not os.path.exists(file_path):
-            return None
-        suffix = Path(file_path).suffix
-        source = file_path
-    else:
-        suffix = Path(file_path.name).suffix
-        source = file_path
-
-    # 부산 데이터는 cp949 인코딩
-    if suffix == '.parquet':
-        df = pd.read_parquet(source)    
-    elif suffix == '.csv':
-        try:
-            df = pd.read_csv(source, encoding='utf-8')
-        except UnicodeDecodeError:
-            df = pd.read_csv(source, encoding='cp949')
-    else:
-        # 지원하지 않는 파일 형식에 대한 에러 방지
-        raise ValueError("지원하지 않는 파일 형식입니다. csv 또는 parquet 파일을 업로드해주세요.")
     
     # '2023-01-01' 형태에서 '2023-01' 추출
     if '년월일' in df.columns:
