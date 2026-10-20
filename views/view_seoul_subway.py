@@ -208,7 +208,7 @@ def render_seoul():
 
         # 🟢 Pydeck 3D 지도 모드
         elif view_mode == SHOW_PYDECK:
-            coord_df = load_file_data(METRO_PATH_SEOUL)
+            coord_df = load_seoul_data(METRO_PATH_SEOUL)
 
             if coord_df is not None:
                 if COL_STATION_ORIGIN in coord_df.columns and COL_STATION not in coord_df.columns:
