@@ -16,9 +16,15 @@ st.page_link("pages/in_out_data.py", label="유동인구 분석 컨설팅 시작
 
 st.markdown("---")
 
-st.subheader("제2의 연트럴파크, 저평가 우량 상권 선점하기")
-st.write("권리금이 오르기 전에 선점하세요. 특정 이슈로 폭발한 상권 사례")
-st.page_link("pages/under_ground.py", label="상권 폭발 잠재력 시뮬레이터", icon="📈")
+st.subheader("우리 동네 블루오션, 독점 가능 업종 찾기")
+st.write("경쟁이 치열한 레드오션을 피해, 해당 지역에서 유독 수요가 몰리는 '특화도 1위' 업종을 발굴해 드립니다.")
+st.page_link("pages/commercial_top3.py", label="지역별 숨은 유망 업종 찾기", icon="💎")
+
+st.markdown("---")
+
+st.subheader("상권 흥망성쇠")
+st.write("어떤 이슈가 흥망성쇠를 결정했을까?")
+st.page_link("pages/under_ground.py", label="상권 흥망성쇠 보기", icon="📈")
 
 st.markdown("---")
 
@@ -27,15 +33,6 @@ st.write("오늘 저녁 우리 매장 앞 유동인구가 얼마나 붐빌까? A
 st.page_link("pages/subway_app.py", label="실시간 유동인구 예측 보기", icon="⏰")
 
 st.markdown("---")
-
-st.subheader("우리 동네 블루오션, 독점 가능 업종 찾기")
-st.write("경쟁이 치열한 레드오션을 피해, 해당 지역에서 유독 수요가 몰리는 '특화도 1위' 업종을 발굴해 드립니다.")
-st.page_link("pages/commercial_top3.py", label="지역별 숨은 유망 업종 찾기", icon="💎")
-
-secret_key = st.sidebar.text_input(" ", type="password", label_visibility="collapsed")
-
-st.markdown("---")
-
 
 st.caption(COPYRIGHT_FULL)
 st.caption(BUSAN_SOURCE_CAPTION)
