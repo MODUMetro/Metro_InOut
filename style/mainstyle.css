@@ -1,0 +1,143 @@
+/* 상업용 무료 폰트 Noto Sans KR 적용 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+html, body, [class*="css"]  {
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 메인 앱 컨테이너 스타일 */
+.block-container {
+    border: 2px solid #00ff41;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2) inset;
+    background-color: #0d1117;
+    padding-top: 3rem;
+}
+
+/* 헤더 텍스트 효과 */
+h1, h2, h3 {
+    color: #00ff41 !important;
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+}
+
+p {
+    color: #a5d6ff !important;
+}
+
+hr {
+    border-bottom: 1px solid #00ff41;
+    box-shadow: 0 0 10px #00ff41;
+    margin: 2rem 0;
+}
+
+/* Expander(폴더) 스타일 커스텀 */
+[data-testid="stExpander"] {
+    border: 1px solid #00ff41;
+    background-color: rgba(0, 255, 65, 0.05);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+[data-testid="stExpander"] summary p {
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+    color: #00ff41 !important;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.4);
+}
+[data-testid="stExpander"] summary svg {
+    color: #00ff41 !important; 
+}
+
+/* 캡션(자료 출처 등) 텍스트 스타일 */
+div[data-testid="stCaptionContainer"] p {
+    color: #a5d6ff !important;
+    font-size: 1.1rem !important; 
+    line-height: 1.6 !important;
+    text-shadow: 0 0 3px rgba(165, 214, 255, 0.3);
+}
+
+/* 공통 버튼 크기 및 폰트 설정 (대형 버튼) */
+div[data-testid="stPageLink-NavLink"] {
+    padding: 1.5rem !important;
+    margin: 1rem 0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+div[data-testid="stPageLink-NavLink"] p {
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+    color: #2fafa9 !important;
+    text-align: center;
+    text-shadow: none; 
+}
+
+/* 버튼 내 아이콘(이모지) 애니메이션 */
+@keyframes icon-wobble {
+    0% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.2) rotate(-10deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+    75% { transform: scale(1.2) rotate(-10deg); }
+    100% { transform: scale(1.2) rotate(0deg); }
+}
+
+div[data-testid="stPageLink-NavLink"] span {
+    font-size: 2.5rem !important;
+    margin-right: 15px !important;
+    vertical-align: middle;
+    display: inline-block; 
+    transition: transform 0.3s ease;
+}
+
+a:hover div[data-testid="stPageLink-NavLink"] span {
+    animation: icon-wobble 0.5s ease-in-out forwards;
+}
+
+/* 유동인구 분석 (파란색) */
+a[href*="in_out_data"] div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(0, 123, 255, 0.1);
+    border: 2px solid rgba(0, 123, 255, 0.5);
+}
+a[href*="in_out_data"]:hover div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(0, 123, 255, 0.3);
+    border: 2px solid #007bff;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
+}
+
+/* 유망 업종 찾기 (보라색) */
+a[href*="commercial_top3"] div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(111, 66, 193, 0.1);
+    border: 2px solid rgba(111, 66, 193, 0.5);
+}
+a[href*="commercial_top3"]:hover div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(111, 66, 193, 0.3);
+    border: 2px solid #6f42c1;
+    box-shadow: 0 0 15px rgba(111, 66, 193, 0.5);
+}
+
+/* 상권 흥망성쇠 (주황색) */
+a[href*="under_ground"] div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(253, 126, 20, 0.1);
+    border: 2px solid rgba(253, 126, 20, 0.5);
+}
+a[href*="under_ground"]:hover div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(253, 126, 20, 0.3);
+    border: 2px solid #fd7e14;
+    box-shadow: 0 0 15px rgba(253, 126, 20, 0.5);
+}
+
+/* 실시간 유동인구 예측 (초록색) */
+a[href*="subway_app"] div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(40, 167, 69, 0.1);
+    border: 2px solid rgba(40, 167, 69, 0.5);
+}
+a[href*="subway_app"]:hover div[data-testid="stPageLink-NavLink"] {
+    background-color: rgba(40, 167, 69, 0.3);
+    border: 2px solid #28a745;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+}
+
+/* 하단 Admin Key 입력창 클릭 차단 방지 */
+[data-testid="stTextInput"] {
+    position: relative;
+    z-index: 9999 !important; /* 다른 숨겨진 요소들 위로 강제 배치 */
+    margin-bottom: 3rem; /* 하단 여백 확보 */
+}
