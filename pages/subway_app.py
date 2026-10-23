@@ -58,6 +58,10 @@ def render():
     models, results, feature_cols = load_models()
 
     st.title("🚇 지하철 시간대별 승하차 인원 예측")
+    try:
+        st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
+    except Exception:  # 이 페이지만 단독 실행해서 홈 페이지가 없을 때는 링크만 생략
+        pass
     latest_yyyymm = int(df["사용월"].max())
     st.caption(
         f"**활용 목적:** 상권분석 참고지표  \n"

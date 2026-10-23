@@ -308,7 +308,10 @@ b_months = sorted(bdf["기간"].unique()) if bdf is not None else []
 st.markdown("<style>[data-testid='stElementToolbar']{display:none !important;}</style>", unsafe_allow_html=True)
 CHART_CONFIG = {"displayModeBar": False}  # 차트 우측 상단 메뉴(PNG 저장 등) 숨김
 st.title("가장 지갑을 많이 여는 지하철역은?")
-st.caption(TOP3_INTRO_CAPTION)
+try:
+    st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
+except Exception:  # 이 페이지만 단독 실행해서 홈 페이지가 없을 때는 링크만 생략
+    pass
 st.session_state.setdefault("top3_map_city", "서울")
 st.session_state.setdefault("top3_map_reset", 0)
 def set_map_city(city_name: str):
@@ -341,16 +344,20 @@ with c3:
             key="top3_busan_period", on_change=set_map_city, args=("부산",))
 strict_periods = st.checkbox("서울: 선택한 모든 분기에 매출 자료가 있는 업종만 비교", value=True,
     help="여러 분기 선택 시 일부 분기에 매출이 없는 업종이 불리하게 비교되지 않도록 합니다.")
-st.caption("서울의 비중과 특화도는 선택한 기간 조건을 충족한 행정동·업종 자료를 기준으로 계산합니다. "
-           "모든 분기 자료 조건을 적용하면 제외된 업종은 지역 및 서울 전체 비중의 계산에서도 제외됩니다. "
-           "부산은 자료가 있는 월별 값의 평균을 사용하므로 업종별 관측 월수가 다를 수 있습니다.")
 top = build_top3(df, start, end, mode, "sum", require_complete=strict_periods)
 n_region = top["지역"].nunique()
 n_all = df["지역"].nunique()
 st.write(f"**서울 {start} ~ {end}** · 매출 정보가 있는 {n_region}개 지역 (전체 {n_all}개) · 기준: {mode}")
 n_rows, n_miss_rows = period_missing(df, start, end)
-st.caption(f"선택 기간 서울 {n_rows:,}행 중 매출 정보가 없는 {n_miss_rows:,}행은 집계에서 제외했습니다 (0원으로 처리하지 않음). "
-           "여러 분기를 고르면 선택한 집계 조건에 따라 포함되는 분기가 달라질 수 있습니다.")
+# 메모장 모양 안내 상자의 문구 (상자는 탭 아래에 그림). 결측 행 수가 기간에 따라 바뀌므로 계산 뒤에 만듦
+memo_lines = [
+    TOP3_INTRO_CAPTION,
+    "서울의 비중과 특화도는 선택한 기간 조건을 충족한 행정동·업종 자료를 기준으로 계산합니다. "
+    "모든 분기 자료 조건을 적용하면 제외된 업종은 지역 및 서울 전체 비중의 계산에서도 제외됩니다. "
+    "부산은 자료가 있는 월별 값의 평균을 사용하므로 업종별 관측 월수가 다를 수 있습니다.",
+    f"선택 기간 서울 {n_rows:,}행 중 매출 정보가 없는 {n_miss_rows:,}행은 집계에서 제외했습니다 (0원으로 처리하지 않음). "
+    "여러 분기를 고르면 선택한 집계 조건에 따라 포함되는 분기가 달라질 수 있습니다.",
+]
 btop = None
 if bdf is not None:
     btop = build_top3(bdf, b_start, b_end, mode, "mean")  # 부산은 월별 일평균 값이라 더하지 않고 평균
@@ -576,6 +583,16 @@ with tab3:
             st.caption("점은 매출 정보가 없는 지역도 표시할 수 있습니다. 이 경우 툴팁에는 '정보 없음'으로 나옵니다.")
         st.caption("서울과 부산은 업종 분류·지표가 달라 색상과 금액을 도시 간 직접 비교하면 안 됩니다.")
         st.caption(BUSAN_TABLE_CAPTION)
+# ── 페이지 설명·계산 기준 안내 (탭 아래, 메모장 모양) ──
+st.markdown("---")
+st.markdown(
+    "<div style='background:#fff8c5;border:1px solid #e6d77a;border-radius:6px;"
+    "padding:10px 14px;color:#4a4a3a;font-size:0.85rem;line-height:1.55;"
+    "box-shadow:2px 2px 6px rgba(0,0,0,0.08);'>"
+    "<div style='font-weight:600;margin-bottom:4px;'>📝 메모</div>"
+    + "".join(f"<p style='margin:0 0 6px 0;'>{escape(t)}</p>" for t in memo_lines)
+    + "</div>",
+    unsafe_allow_html=True)
 # ── 공공누리 출처표시: 짧은 안내 + 홈 화면 링크 (전체 출처표시는 홈 화면 하단에 있음) ──
 st.markdown("---")
 st.caption(TOP3_SEOUL_SOURCE_CAPTION)
