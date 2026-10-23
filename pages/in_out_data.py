@@ -18,6 +18,8 @@ COL_ALIGHT_DETAIL = '하차_상세'
 LIGHT_DAY_TIME_START = 6
 LIGHT_DAY_TIME_END = 18
 PAGE_TITLE = '내 매장 골든타임 찾기'
+MENU_TAP_SEOUL = '서울 도시철도'
+MENU_TAP_BUSAN = '부산 도시철도'
 # ==========================================
 
 # ==========================================
@@ -35,13 +37,14 @@ st.title("🚇 내 타겟 고객이 몰리는 골든타임 역 찾기")
 st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
 
 # 상위 페이지 버튼 UI 제공 (서울 / 부산 선택)
-region = st.pills("📍 분석할 지역을 선택하세요", ["서울 지하철", "부산 도시철도"], default="서울 지하철")
+region = st.pills("📍 분석할 지역을 선택하세요", [MENU_TAP_SEOUL, MENU_TAP_BUSAN], default=MENU_TAP_SEOUL)
+
 st.markdown("<br>", unsafe_allow_html=True)
 
 # 선택된 모듈 적용 (고유 UI 및 차트 렌더링 후 지도용 데이터 반환)
-if region == "서울 지하철":
+if region == MENU_TAP_SEOUL:
     map_df, center_lat, center_lon, map_container = render_seoul()
-elif region == "부산 도시철도":
+elif region == MENU_TAP_BUSAN:
     map_df, center_lat, center_lon, map_container = render_busan()
 
 # Pydeck 지도 통일 (하나의 코드로 재사용)
@@ -82,7 +85,7 @@ if map_df is not None and not map_df.empty and map_container is not None:
             initial_view_state=view_state,
             map_style=CARTO_DARK,
             tooltip={
-                "html": "<b>{역명}</b><br/>운영노선: {노선정보}<br/>선택시간 승차: {승차정보}명<br/>선택시간 하차: {하차정보}명<br/>총 인원: {승하차합계}명",
+                "html": "<b>{역명}</b><br/>운영노선: {노선정보}<br/>선택시간 승차: {승차정보}명<br/>선택시간 하차: {하차정보}명",
                 "style": {"color": "white"}
             }
         )

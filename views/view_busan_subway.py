@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 # 설정 파일이 있다면 임포트 (여기서는 상수로 대체 가능)
-from settings import SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, BUSAN_METRO_BOARDING_DATA_PATH, BUSAN_METRO_BOARDING_DATA_PARQUET_PATH, BUSAN_METRO_POSITION
+from settings import SHOW_CIRCLE_AND_BAR, SHOW_PYDECK, BUSAN_METRO_BOARDING_DATA_PARQUET_PATH, BUSAN_METRO_POSITION, TRANSER_INFORMATION
 from util.utils import load_common_data
 
 # ==========================================
@@ -37,7 +37,7 @@ def load_busan_coords(file_path):
 
 def render_busan():
     """부산 도시철도 UI 렌더링 및 분석 로직"""
-    
+    st.markdown(TRANSER_INFORMATION)
     # ==========================================
     # 데이터 로드
     # ==========================================
@@ -54,15 +54,12 @@ def render_busan():
     # ==========================================
     # 검색 조건 컨트롤 패널
     # ==========================================
-    st.markdown("### 🔍 부산 분석 조건 설정")
+    st.markdown("### 🔍 분석 조건 설정")
+
+    view_mode = st.pills("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK], key="busan_view_mode", default=SHOW_CIRCLE_AND_BAR)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        view_mode = st.pills("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK], key="busan_view_mode")
-    
-    with col2:
-        month_list = sorted(df['년월'].unique().tolist(), reverse=True)
-        selected_month = st.selectbox("사용월 선택", month_list, key="busan_month")
+    month_list = sorted(df['년월'].unique().tolist(), reverse=True)
+    selected_month = st.selectbox("사용월 선택", month_list, key="busan_month")
             
     col3, col4 = st.columns(2)
     # 부산은 시간대 컬럼이 '01시-02시'부터 '24시-01시'까지 존재합니다.
