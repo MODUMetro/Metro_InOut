@@ -1,5 +1,3 @@
-#subway_app.py
-
 """
 지하철 시간대별 승하차 인원 - 1/3/6시간 뒤 예측 대시보드
 
@@ -12,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 import streamlit as st
 import pytz
 
@@ -59,7 +58,12 @@ def render():
     models, results, feature_cols = load_models()
 
     st.title("🚇 지하철 시간대별 승하차 인원 예측")
-    st.caption("기준 시간대까지의 직전 1~3시간대 실제값을 바탕으로, 1시간/3시간/6시간 뒤 승하차 인원을 예측합니다.")
+    latest_yyyymm = int(df["사용월"].max())
+    st.caption(
+        f"**활용 목적:** 상권분석 참고지표  \n"
+        f"**최신 데이터:** 2026년 09월 기준월 기준"
+    )
+    st.caption("예측값은 참고용이며, 실제 승하차 인원과 차이가 있을 수 있습니다.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -114,7 +118,8 @@ def render():
             records = []
             for h in HORIZONS:
                 for target in ["승차인원", "하차인원"]:
-                    pred = models[(h, target)].predict(X)[0]
+                    # 승하차 인원이 음수로 표시되지 않도록 반올림 전에 0 이상으로 제한합니다.
+                    pred = max(0.0, float(models[(h, target)].predict(X)[0]))
                     actual_col = f"target_h{h}_{target[0]}차"
                     actual = row[actual_col].iloc[0] if actual_col in row.columns else None
                     records.append({
@@ -164,8 +169,9 @@ def render():
         st.warning("이 월/시간대 조합에는 예측 가능한 역이 없어요.")
     else:
         X_all = rank_pool[feature_cols]
-        pred_승차 = models[(rank_horizon, "승차인원")].predict(X_all)
-        pred_하차 = models[(rank_horizon, "하차인원")].predict(X_all)
+        # 순위표 예측도 반올림 전에 0 이상으로 제한합니다.
+        pred_승차 = np.maximum(0, models[(rank_horizon, "승차인원")].predict(X_all))
+        pred_하차 = np.maximum(0, models[(rank_horizon, "하차인원")].predict(X_all))
 
         table = rank_pool[["호선명", "지하철역"]].copy()
         table["예측 승차인원"] = pred_승차.round().astype(int)

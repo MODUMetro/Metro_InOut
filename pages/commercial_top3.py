@@ -14,6 +14,7 @@
 - 부산 평균이용금액은 월 총매출이 아니므로 여러 달을 합치지 않고 평균을 씀.
 - 부산 업종 오타(음식료픔)는 새 컬럼(업종)에서만 정규화하고 원본 컬럼(업종대분류)은 그대로 둠.
 """
+from html import escape
 import inspect
 import math
 from zlib import crc32
@@ -269,7 +270,7 @@ def render_region_view(top_df: pd.DataFrame, key: str, default_region: str | Non
     st.markdown(
         "<div style='display:inline-block;padding:8px 18px;margin:4px 0 14px 0;border-radius:999px;"
         "background:#e3effc;color:#0b4a8f;font-size:1.15rem;font-weight:700;'>"
-        f"🚇 인근 지하철역 : {stations_text(station)}</div>",
+        f"🚇 인근 지하철역 : {escape(stations_text(station))}</div>",
         unsafe_allow_html=True,
     )
     cols = st.columns(len(r))
