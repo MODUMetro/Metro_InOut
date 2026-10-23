@@ -28,13 +28,18 @@ with st.expander("상권 흥망성쇠"):
     st.write("어떤 이슈가 흥망성쇠를 결정했을까?")
     st.page_link("pages/under_ground.py", label="상권 흥망성쇠 보기", icon="📈")
 
-with st.expander("실시간 피크타임 & 유동인구 예측"):
+with st.expander("피크타임 & 유동인구 예측"):
     st.write(
-        "월별 시간대별 승하차 데이터를 바탕으로 지하철 이용 추세와 "
-        "예측 인원을 제공합니다. 예측값은 해당 월의 시간대별 누적 인원이며, "
-        "특정 날짜의 실시간 이용 인원을 의미하지 않습니다."
+        "월별 시간대별 승하차 데이터를 바탕으로 지하철 이용 인원을 예측합니다. "
+        "예측값은 해당 월의 시간대별 누적 인원이며, "
+        "일별·실시간 예측은 아닙니다."
     )
-    st.page_link("pages/subway_app.py", label="지하철 시간대별 승하차 인원 예측 보기", icon="⏰")
+    st.page_link(
+        "pages/subway_app.py",
+        label="지하철 시간대별 승하차 인원 예측 보기",
+        icon="⏰"
+    )
+
 
 # 자료 출처
 with st.expander("자료 출처"):
