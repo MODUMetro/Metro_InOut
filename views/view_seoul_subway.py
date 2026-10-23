@@ -43,7 +43,7 @@ def render_seoul():
     # ==========================================
     # 데이터 로드
     # ==========================================
-    with st.expander("📁 데이터 로드 및 상태 확인 (클릭해서 열기)", expanded=False):
+    with st.expander("📁 서울 데이터 로드 상태 (클릭해서 열기)", expanded=False):
         # ⚠️ 위젯 key를 지정해 주어 부산 UI와 충돌을 방지합니다.
         uploaded_file = st.file_uploader("기본 파일 외에 다른 파일을 보시려면 업로드하세요", type=['csv', 'parquet'], key='seoul_uploader')
         
@@ -65,18 +65,15 @@ def render_seoul():
     # ==========================================
     st.markdown("### 🔍 분석 조건 설정")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        view_mode = st.pills("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK], key="seoul_view_mode")
-    
-    with col2:
-        if '사용월' in df.columns:
-            month_list = sorted(df['사용월'].astype(str).unique().tolist(), reverse=True)
-            selected_month = st.selectbox("사용월 선택", month_list, key="seoul_month")
-        else:
-            st.error("데이터에 '사용월' 컬럼이 없습니다.")
-            st.stop()
-            
+    view_mode = st.pills("📊 시각화 모드 선택", [SHOW_CIRCLE_AND_BAR, SHOW_PYDECK], key="seoul_view_mode", default=SHOW_CIRCLE_AND_BAR)
+        
+    if '사용월' in df.columns:
+        month_list = sorted(df['사용월'].astype(str).unique().tolist(), reverse=True)
+        selected_month = st.selectbox("사용월 선택", month_list, key="seoul_month")
+    else:
+        st.error("데이터에 '사용월' 컬럼이 없습니다.")
+        st.stop()
+        
     col3, col4, col5 = st.columns(3)
     with col3:
         if COL_LINE in df.columns:
