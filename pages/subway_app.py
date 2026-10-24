@@ -37,7 +37,7 @@ def load_data() -> pd.DataFrame:
         wide = load_and_reshape(PARQUET_PATH)
         return build_multihorizon_features(wide)
     except Exception as e:
-        st.error(f"CSV 파일을 읽는 중 문제가 생겼습니다: {e}")
+        st.error(f"데이터 파일을 읽는 중 문제가 생겼습니다: {e}")
         st.stop()
 
 
@@ -45,7 +45,7 @@ def load_data() -> pd.DataFrame:
 def load_models():
     if not MODEL_PATH.exists():
         ensure_file_exists(PARQUET_PATH)
-        with st.spinner("처음 실행이라 모델을 학습하는 중이에요. 데이터가 커서 몇 분 정도 걸릴 수 있어요..."):
+        with st.spinner("처음 실행이라 모델을 학습하는 중입니다. 데이터가 커서 몇 분 정도 걸릴 수 있습니다..."):
             return load_or_train_models(PARQUET_PATH, MODEL_PATH)
 
     # 이미 학습된 pkl이 있으면 바로 로드 (스피너 없이)
@@ -62,15 +62,14 @@ def render():
         st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
     except Exception:  # 이 페이지만 단독 실행해서 홈 페이지가 없을 때는 링크만 생략
         pass
-    latest_yyyymm = int(df["사용월"].max())
     st.caption(
         f"**활용 목적:** 상권분석 참고지표  \n"
         f"**최신 데이터:** 2026년 09월 기준"
     )
-    st.caption(
-        "예측값은 참고용이며, 실제 승하차 인원과 차이가 있을 수 있습니다.  \n"
-        "선택한 월의 직전 시간대 데이터를 바탕으로 이후 시간대의 월 누적 승하차 인원을 예측합니다. "
-        "(일별·실시간 예측 아님)"
+    st.caption("예측값은 참고용입니다.")
+    st.markdown(
+        "**선택한 달 안에서**, 시작 시간대 직전 3시간 데이터로 "
+        "1·3·6시간 뒤 인원을 예측합니다."
     )
 
     col1, col2 = st.columns(2)
@@ -88,9 +87,9 @@ def render():
     default_hour_idx = HOUR_ORDER.index(current_bracket) if current_bracket in HOUR_ORDER else 8
 
     use_now = st.checkbox(
-        f"현재 시각과 같은 시간대 자동 선택",
+        "최근 달 · 현재 시간대로 자동 선택",
         value=False,
-        help="데이터에 있는 가장 최근 달의 같은 시간대 패턴으로 대신 계산합니다. "
+        help="데이터에 있는 가장 최근 달과 현재 시각의 시간대로 계산합니다. "
              "오늘 날짜의 실제 데이터가 아니라는 점 참고해 주세요.",
     )
 
@@ -99,14 +98,17 @@ def render():
         hour = current_bracket if current_bracket in HOUR_ORDER else HOUR_ORDER[default_hour_idx]
         st.info(
             f"데이터상 가장 최근 달인 **{latest_month // 100}년 {latest_month % 100:02d}월**의 "
-            f"**{hour}시** 패턴을 기준으로 계산합니다 (오늘 날짜의 실시간 데이터는 아님)."
+            f"**{hour.replace('-', '~')}시**를 시작 시간대로 계산합니다. (오늘 날짜의 실시간 데이터는 아님)"
         )
     else:
         month = st.selectbox(
-            "기준 월", months, index=len(months) - 1,
+            "월", months, index=len(months) - 1,
             format_func=lambda m: f"{m // 100}년 {m % 100:02d}월",
         )
-        hour = st.selectbox("기준 시간대", HOUR_ORDER, index=default_hour_idx)
+        hour = st.selectbox(
+            "시작 시간대", HOUR_ORDER, index=default_hour_idx,
+            format_func=lambda h: h.replace("-", "~") + "시",
+        )
 
     if st.button("예측하기", type="primary"):
         row = df[
@@ -114,16 +116,24 @@ def render():
             & (df["사용월"] == month) & (df["시간대"] == hour)
         ]
 
-        if row.empty or row[feature_cols].isna().any(axis=1).iloc[0]:
-            st.warning(
-                "이 조합은 직전 시간대 데이터가 부족해서 예측할 수 없어요. "
-                "(하루 시작인 04-05시 근처는 lag 값이 부족할 수 있습니다)"
-            )
+        if row.empty:
+            st.warning("선택한 월·시간대에 이 역의 데이터가 없어 예측할 수 없습니다.")
+        elif row[feature_cols].isna().any(axis=1).iloc[0]:
+            # 하루 첫 3개 시간대는 직전 3시간 데이터가 항상 없습니다.
+            if HOUR_ORDER.index(hour) < 3:
+                st.warning(
+                    f"{hour.replace('-', '~')}시는 하루 시작 시간대라 "
+                    "직전 3시간 데이터가 없어 예측할 수 없습니다."
+                )
+            else:
+                st.warning("직전 3시간 데이터 중 빠진 값이 있어 예측할 수 없습니다.")
         else:
             X = row[feature_cols]
+            # "서울역"처럼 이름이 이미 "역"으로 끝나면 "역"을 덧붙이지 않습니다.
+            station_label = station if str(station).endswith("역") else f"{station}역"
             st.subheader(
-                f"{line} {station}역 — {month // 100}년 {month % 100:02d}월 "
-                f"승하차 인원 예측 ({hour.replace('-', '~')}시 기준)"
+                f"{line} {station_label} · {month // 100}년 {month % 100:02d}월 "
+                f"{hour.replace('-', '~')}시 기준"
             )
 
             # 운영일의 마지막 시간대(03-04시)를 넘는 예측은 제외합니다.
@@ -137,78 +147,75 @@ def render():
                 if hour_idx + h >= len(HOUR_ORDER)
             ]
 
-            if excluded_horizons:
-                excluded_text = ", ".join(
-                    f"{h}시간 뒤" for h in excluded_horizons
+            if valid_horizons:
+                records = []
+                for h in valid_horizons:
+                    # 1/3/6시간 뒤의 실제 목표 시간대를 보여드립니다.
+                    target_hour_label = HOUR_ORDER[hour_idx + h].replace("-", "~") + "시"
+                    for target in ["승차인원", "하차인원"]:
+                        # 예측 인원은 0 이상으로 제한합니다.
+                        pred = max(
+                            0.0,
+                            float(models[(h, target)].predict(X)[0]),
+                        )
+                        actual_col = f"target_h{h}_{target[0]}차"
+                        actual = (
+                            row[actual_col].iloc[0]
+                            if actual_col in row.columns
+                            else None
+                        )
+                        records.append({
+                            "목표 시간대": target_hour_label,
+                            "구분": target,
+                            "예측 인원(월 누적)": round(pred),
+                            "실제 인원(월 누적)": (
+                                None if pd.isna(actual) else round(actual)
+                            ),
+                        })
+
+                result_df = pd.DataFrame(records)
+                st.dataframe(result_df, width="stretch", hide_index=True)
+
+                # 실제 목표 시간대의 순서를 1/3/6시간 뒤 순으로 유지합니다.
+                chart_df = result_df.copy()
+                target_hour_order = [
+                    HOUR_ORDER[hour_idx + h].replace("-", "~") + "시"
+                    for h in valid_horizons
+                ]
+                chart_df["목표 시간대"] = pd.Categorical(
+                    chart_df["목표 시간대"], categories=target_hour_order, ordered=True
                 )
-                st.info(
-                    f"{excluded_text} 예측은 목표 시간대가 운영일의 마지막 "
-                    "시간대(03-04시)를 넘어 표시하지 않습니다."
+                chart_df = chart_df.sort_values("목표 시간대")
+
+                # 승차/하차가 위아래로 쌓이지(stacked) 않고, 목표 시간대별로
+                # 나란히(grouped) 표시되도록 stack=False를 적용합니다.
+                st.bar_chart(
+                    chart_df, x="목표 시간대", y="예측 인원(월 누적)", color="구분",
+                    stack=False, width="stretch",
                 )
 
-            records = []
-            for h in valid_horizons:
-                # 1/3/6시간 뒤의 실제 목표 시간대를 보여드립니다.
-                target_hour_label = HOUR_ORDER[hour_idx + h].replace("-", "~") + "시"
-                for target in ["승차인원", "하차인원"]:
-                    # 예측 인원은 0 이상으로 제한합니다.
-                    pred = max(
-                        0.0,
-                        float(models[(h, target)].predict(X)[0]),
+                st.caption(
+                    "실제 인원(월 누적)은 선택한 월의 해당 목표 시간대에 "
+                    "관측값이 있는 경우에만 표시됩니다."
+                )
+
+                note = f"{'·'.join(map(str, valid_horizons))}시간 뒤 예측입니다."
+                if excluded_horizons:
+                    note += (
+                        f" {'·'.join(map(str, excluded_horizons))}시간 뒤는 "
+                        "운영 종료(03~04시) 이후라 제외했습니다."
                     )
-                    actual_col = f"target_h{h}_{target[0]}차"
-                    actual = (
-                        row[actual_col].iloc[0]
-                        if actual_col in row.columns
-                        else None
-                    )
-                    records.append({
-                        "목표 시간대": target_hour_label,
-                        "구분": target,
-                        "예측 인원(월 누적)": round(pred),
-                        "실제값(참고용)": (
-                            None if pd.isna(actual) else round(actual)
-                        ),
-                    })
+            else:
+                note = "운영 종료 시간대라 1·3·6시간 뒤 예측이 없습니다."
 
-            # 예측 가능한 시간대가 없어도 표와 차트의 열 구조를 유지합니다.
-            result_df = pd.DataFrame(
-                records,
-                columns=[
-                    "목표 시간대",
-                    "구분",
-                    "예측 인원(월 누적)",
-                    "실제값(참고용)",
-                ],
-            )
-            st.dataframe(result_df, width="stretch", hide_index=True)
-
-            # 실제 목표 시간대의 순서를 1/3/6시간 뒤 순으로 유지합니다.
-            chart_df = result_df.copy()
-            target_hour_order = [
-                HOUR_ORDER[hour_idx + h].replace("-", "~") + "시"
-                for h in valid_horizons
-            ]
-            chart_df["목표 시간대"] = pd.Categorical(
-                chart_df["목표 시간대"], categories=target_hour_order, ordered=True
-            )
-            chart_df = chart_df.sort_values("목표 시간대")
-
-            # 승차/하차가 위아래로 쌓이지(stacked) 않고, 목표 시간대별로
-            # 나란히(grouped) 표시되도록 stack=False를 적용합니다.
-            st.bar_chart(
-                chart_df, x="목표 시간대", y="예측 인원(월 누적)", color="구분",
-                stack=False, width="stretch",
-            )
-
-            st.caption(
-                "실제값(참고용)은 선택한 월의 해당 목표 시간대에 "
-                "관측값이 있는 경우에만 표시됩니다."
-            )
+            # 제외된 시간이 있으면 놓치지 않도록 펼친 상태로 보여드립니다.
+            with st.expander("예측 시간 안내", expanded=bool(excluded_horizons)):
+                st.write(note)
 
     st.markdown("---")
     st.subheader(
-        f"{month // 100}년 {month % 100:02d}월 예측 하차 TOP 10"
+        f"{month // 100}년 {month % 100:02d}월 "
+        f"{hour.replace('-', '~')}시 기준 예측 하차 TOP 10"
     )
     st.caption(
         "아래 순위는 호선·역별 기준입니다. "
@@ -224,19 +231,29 @@ def render():
     rank_pool = df[(df["사용월"] == month) & (df["시간대"] == hour)].dropna(subset=feature_cols)
 
     rank_hour_idx = HOUR_ORDER.index(hour)
+    rank_is_valid = rank_hour_idx + rank_horizon < len(HOUR_ORDER)
 
-    if rank_hour_idx + rank_horizon < len(HOUR_ORDER):
+    if rank_is_valid:
         target_hour = HOUR_ORDER[rank_hour_idx + rank_horizon]
-        st.caption(f"예측 시간대: {target_hour.replace('-', '~')}시")
-
-    if rank_hour_idx + rank_horizon >= len(HOUR_ORDER):
-        st.info(
-            f"{rank_horizon}시간 뒤 순위는 목표 시간대가 운영일의 마지막 "
-            "시간대(03-04시)를 넘어 표시하지 않습니다."
-        )
-    elif rank_pool.empty:
-        st.warning("이 월/시간대 조합에는 예측 가능한 역이 없습니다.")
+        rank_note = f"{rank_horizon}시간 뒤({target_hour.replace('-', '~')}시) 예측 순위입니다."
     else:
+        rank_note = (
+            f"{rank_horizon}시간 뒤는 운영 종료(03~04시) 이후라 순위를 표시하지 않습니다."
+        )
+
+    # 순위표가 길어서 안내는 선택 상자 바로 아래에 두고, 제외된 경우에만 펼칩니다.
+    with st.expander("예측 시간 안내", expanded=not rank_is_valid):
+        st.write(rank_note)
+
+    if rank_is_valid and rank_pool.empty:
+        if rank_hour_idx < 3:
+            st.warning(
+                f"{hour.replace('-', '~')}시는 하루 시작 시간대라 "
+                "직전 3시간 데이터가 없어 순위를 표시할 수 없습니다."
+            )
+        else:
+            st.warning("이 월·시간대에는 직전 3시간 데이터가 모두 있는 역이 없어 순위를 표시할 수 없습니다.")
+    elif rank_is_valid:
         X_all = rank_pool[feature_cols]
         # 순위표 예측도 반올림 전에 0 이상으로 제한합니다.
         pred_승차 = np.maximum(0, models[(rank_horizon, "승차인원")].predict(X_all))
@@ -253,7 +270,7 @@ def render():
         st.bar_chart(top10_get_off.set_index("지하철역")["예측 하차인원"])
 
         st.markdown("#### 🔺 사람이 가장 몰리는 역 (순유입 TOP 10)")
-        st.caption("순유입 = 예측 하차인원 - 예측 승차인원. 값이 클수록 그 시간대에 사람이 몰려드는 역이에요.")
+        st.caption("순유입 = 예측 하차인원 - 예측 승차인원. 값이 클수록 그 시간대에 사람이 몰려드는 역입니다.")
         top10_in = (
             table[table["순유입(하차-승차)"] > 0]
             .sort_values("순유입(하차-승차)", ascending=False)
@@ -265,7 +282,7 @@ def render():
         st.bar_chart(top10_in.set_index("지하철역")["순유입(하차-승차)"])
 
         st.markdown("#### 🔻 사람이 가장 빠져나가는 역 (순유출 TOP 10)")
-        st.caption("순유입이 가장 작은(음수 폭이 큰) 역이에요. 값이 작을수록 그 시간대에 사람이 빠져나가는 역입니다.")
+        st.caption("타는 사람이 내리는 사람보다 많은 역입니다. 값이 작을수록 그 시간대에 사람이 많이 빠져나갑니다.")
         top10_out = (
             table[table["순유입(하차-승차)"] < 0]
             .sort_values("순유입(하차-승차)", ascending=True)
@@ -275,6 +292,18 @@ def render():
         top10_out.index = top10_out.index + 1
         st.dataframe(top10_out, width="stretch")
         st.bar_chart(top10_out.set_index("지하철역")["순유입(하차-승차)"])
+
+    # ── 예측값 해석 시 참고 안내 (페이지 맨 아래, commercial_top3.py와 같은 메모장 모양) ──
+    st.markdown("---")
+    st.markdown(
+        "<div style='background:#fff8c5;border:1px solid #e6d77a;border-radius:6px;"
+        "padding:10px 14px;color:#4a4a3a;font-size:0.85rem;line-height:1.55;"
+        "box-shadow:2px 2px 6px rgba(0,0,0,0.08);'>"
+        "<div style='font-weight:600;margin-bottom:4px;'>📝 메모</div>"
+        "<p style='margin:0 0 6px 0;'>2026년 1월까지는 모델 학습에 쓰인 기간입니다. "
+        "이 기간을 고르면 예측값이 실제값과 매우 가깝게 나와, 실제 성능보다 잘 맞아 보일 수 있습니다.</p>"
+        "</div>",
+        unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
