@@ -41,5 +41,5 @@ secret_key = st.text_input("Admin Key", type="password", label_visibility="colla
 
 if secret_key == "qwer":
     show_client_management();
-    st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
-    st.page_link("pages/subway_app.py", label="지하철 시간대별 승하차 인원 예측 보기", icon="⏰")
+    # st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
+    # st.page_link("pages/subway_app.py", label="지하철 시간대별 승하차 인원 예측 보기", icon="⏰")
