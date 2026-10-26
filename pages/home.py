@@ -1,6 +1,7 @@
 import streamlit as st
 from settings import COPYRIGHT_FULL, BUSAN_SOURCE_CAPTION
 from util.utils import hide_sidebar
+from pages.client_list import show_client_management
 
 # 사이드바 숨김 함수 호출
 hide_sidebar()
@@ -52,4 +53,5 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 secret_key = st.text_input("Admin Key", type="password", label_visibility="collapsed")
 
 if secret_key == "qwer":
+    show_client_management();
     st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
