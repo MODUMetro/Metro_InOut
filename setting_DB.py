@@ -17,11 +17,11 @@ def init_db():
             CREATE TABLE IF NOT EXISTS consultations (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(50),
-                phone VARCHAR(20),
+                phone VARCHAR(11) CHECK (phone ~ '^[0-9]{10,11}$'),
                 location VARCHAR(100),
                 category VARCHAR(50),
                 purpose TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')
             )
         """))
         conn.commit()
