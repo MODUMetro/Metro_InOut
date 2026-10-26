@@ -140,7 +140,6 @@ SHOW_PYDECK = ("지도로 확인하기")
 COPYRIGHT_FULL = (
     "자료들은 서울특별시가 저작권을 보유하고 서울신용보증재단이 제공하는 공공누리 제1유형 저작물 "
     "'[서울시 상권분석서비스(추정매출-행정동)](https://data.seoul.go.kr/dataList/OA-22175/S/1/datasetView.do)'(2023년 공개), "
-    "'[서울시 상권분석서비스(점포-행정동)](https://data.seoul.go.kr/dataList/OA-22172/S/1/datasetView.do)'(2023년 공개), "
     "'[서울시 상권분석서비스(영역-행정동)](https://data.seoul.go.kr/dataList/OA-22160/S/1/datasetView.do)'(2023년 공개)과, "
     "서울특별시가 저작권을 보유하고 제공하는 공공누리 제1유형 저작물 "
     "'[서울시 지하철 호선별 역별 시간대별 승하차 인원 정보](https://data.seoul.go.kr/dataList/OA-12252/S/1/datasetView.do)'(2015년 공개), "
@@ -210,7 +209,6 @@ MAP_ATTRIBUTION_CAPTION = (
 TOP3_SEOUL_SOURCE_CAPTION = (
     "이 화면의 서울 데이터는 서울특별시가 저작권을 보유하고 서울신용보증재단이 제공하는 공공누리 제1유형 저작물 "
     "'[서울시 상권분석서비스(추정매출-행정동)](https://data.seoul.go.kr/dataList/OA-22175/S/1/datasetView.do)'(2023년 공개), "
-    "'[서울시 상권분석서비스(점포-행정동)](https://data.seoul.go.kr/dataList/OA-22172/S/1/datasetView.do)'(2023년 공개), "
     "'[서울시 상권분석서비스(영역-행정동)](https://data.seoul.go.kr/dataList/OA-22160/S/1/datasetView.do)'(2023년 공개)과, "
     "서울특별시가 저작권을 보유하고 제공하는 공공누리 제1유형 저작물 "
     "'[서울시 지하철 호선별 역별 시간대별 승하차 인원 정보](https://data.seoul.go.kr/dataList/OA-12252/S/1/datasetView.do)'(2015년 공개), "
