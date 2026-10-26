@@ -42,6 +42,10 @@ MAP_PALETTE = px.colors.qualitative.D3  # 서로 잘 구분되는 10색
 NO_INFO = "정보 없음"      # 매출 결측 표시용 (0원이 아님)
 NO_STATION = "인근역 없음"  # 800m 안에 매칭된 역이 없음 (대중교통이 없다는 뜻이 아님)
 SEOUL_STATION_SLOTS = [f"인근지하철{i}" for i in range(1, 6)]  # 서울 인근역 슬롯 (최대 5개)
+# 서울 점포 수: 점포 수(재고)는 분기를 더하면 같은 점포가 중복되므로 기간 평균, 개업·폐업(흐름)은 기간 합계
+STORE_STOCK_COLS = ["전체_점포_수", "일반_점포_수", "프랜차이즈_점포_수"]
+STORE_FLOW_COLS = ["개업_점포_수", "폐업_점포_수"]
+STORE_TIP_COLS = ["st_total", "st_general", "st_franchise", "st_open", "st_close", "store_basis"]  # 지도 툴팁용 문자열 필드
 # ── 부산 (표의 [부산] 하위 탭, 지도의 [부산] 선택에 사용. 경로·안내/출처 문구는 settings.py) ──
 SHOW_BUSAN_STATION = True  # False면 부산 표에서 인근역 칸을 숨김
 # ── 구별 보기 ──
@@ -89,7 +93,8 @@ def load_top3_data() -> pd.DataFrame:
     """서울: 식별 키는 코드, 표시용 지역명은 별도 컬럼."""
     # 서울 행정동·업종별 행은 그대로 유지하고 매출 결측도 원본 상태로 읽음.
     df = pd.read_csv(DATA_PATH, encoding="utf-8-sig", dtype={"행정동코드": str},
-        usecols=["기준년분기", "행정동", "행정동코드", "업종", "당월_매출_금액"] + SEOUL_STATION_SLOTS)
+        usecols=["기준년분기", "행정동", "행정동코드", "업종", "당월_매출_금액"] + SEOUL_STATION_SLOTS
+                + STORE_STOCK_COLS + STORE_FLOW_COLS)
     df = validate_sales(df, "기준년분기", "업종", "당월_매출_금액", "서울")
     q = df["기준년분기"].astype(str)
     df["기간"] = q.str[:4] + "년 " + q.str[4:] + "분기"
@@ -99,6 +104,8 @@ def load_top3_data() -> pd.DataFrame:
     # 동일 행정동에 업종이 반복되므로 인근역 목록은 코드당 한 번만 구성.
     info = df.drop_duplicates("코드")[["코드", "행정동"] + SEOUL_STATION_SLOTS].copy()
     info["행정동"] = info["행정동"].str.replace("?", "·", regex=False)
+    for col in SEOUL_STATION_SLOTS:  # 역 이름도 인코딩 깨짐으로 생긴 '?'를 '·'로 (예: 4?19민주묘지)
+        info[col] = info[col].map(lambda s: s.replace("?", "·") if isinstance(s, str) else s)
     info["인근역"] = info[SEOUL_STATION_SLOTS].apply(
         lambda r: ", ".join(r.dropna().astype(str)), axis=1).replace("", NO_STATION)
     # 동명이 있을 때는 첫 번째 인근역으로 표시 이름을 구분하고 코드를 최종 식별자로 유지.
@@ -161,7 +168,8 @@ def load_busan_data() -> pd.DataFrame | None:
         simple.where(simple.map(name_count).eq(1), code_name["지역_전체"])))
     df["지역"] = df["코드"].map(name_map)
     df["인근역_원본"] = df["인근지하철역"]
-    df["인근역"] = (df["인근지하철역"].str.replace(r"\s*\(\d+호선\)\s*$", "", regex=True)
+    df["인근역"] = (df["인근지하철역"].str.replace("?", "·", regex=False)
+        .str.replace(r"\s*\(\d+호선\)\s*$", "", regex=True)
         .fillna(NO_STATION))
     return df[["기간", "코드", "지역", "지역_전체", "인근역", "인근역_원본", "업종", "매출액"]]
 @st.cache_data
@@ -225,6 +233,12 @@ def period_missing(df: pd.DataFrame, start: str, end: str) -> tuple[int, int]:
     """선택 기간의 (전체 행 수, 매출 결측 행 수). 집계에서 제외한 건수를 화면에 알리려고 씀."""
     d = df[(df["기간"] >= start) & (df["기간"] <= end)]
     return len(d), int(d["매출액"].isna().sum())
+@st.cache_data
+def store_summary(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
+    """선택 기간의 (코드, 업종)별 점포 수. 점포 수는 자료가 있는 분기의 평균, 개업·폐업은 기간 합계."""
+    window = df[(df["기간"] >= start) & (df["기간"] <= end)]
+    g = window.groupby(["코드", "업종"])
+    return g[STORE_STOCK_COLS].mean().join(g[STORE_FLOW_COLS].sum()).reset_index()
 def to_wide(top: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     ranks = ["1위", "2위", "3위"]
     if top.empty:
@@ -275,12 +289,14 @@ def render_region_view(top_df: pd.DataFrame, key: str, default_region: str | Non
     )
     cols = st.columns(len(r))
     for col, (_, row) in zip(cols, r.iterrows()):
-        col.metric(f"{row['순위']} · {row['업종']}", f"{row['비중']:.1%}", f"특화도 {row['특화도']:.2f}", delta_color="off")
+        # 특화도는 증감이 아니므로 화살표를 끔 (화살표가 있으면 증가한 값처럼 보임)
+        col.metric(f"{row['순위']} · {row['업종']}", f"{row['비중']:.1%}", f"특화도 {row['특화도']:.2f}",
+                   delta_color="off", delta_arrow="off")
     if len(r) < 3:
         st.caption(f"이 지역은 선택 기간에 매출 정보가 있는 업종이 {len(r)}개뿐이라 나머지 순위는 '{NO_INFO}'입니다.")
     if unit == "억":
         plot = r.assign(값=r["매출"] / 1e8)
-        x_label = "기간 매출 합계 (억 원)"
+        x_label = "기간 추정매출 합계 (억 원)"
     else:
         plot = r.assign(값=r["매출"])
         x_label = "기간 평균이용금액 (원, 월별 값의 평균)"
@@ -308,7 +324,10 @@ b_months = sorted(bdf["기간"].unique()) if bdf is not None else []
 st.markdown("<style>[data-testid='stElementToolbar']{display:none !important;}</style>", unsafe_allow_html=True)
 CHART_CONFIG = {"displayModeBar": False}  # 차트 우측 상단 메뉴(PNG 저장 등) 숨김
 st.title("가장 지갑을 많이 여는 지하철역은?")
-st.caption(TOP3_INTRO_CAPTION)
+try:
+    st.page_link("pages/home.py", label="홈으로 돌아가기", icon="🏠")
+except Exception:  # 이 페이지만 단독 실행해서 홈 페이지가 없을 때는 링크만 생략
+    pass
 st.session_state.setdefault("top3_map_city", "서울")
 st.session_state.setdefault("top3_map_reset", 0)
 def set_map_city(city_name: str):
@@ -336,25 +355,37 @@ with c3:
         b_start = b_end = b_months[0]
         st.caption(f"부산 기간: {b_start}")
     else:
+        # 기본값은 서울 최신 분기와 같은 3개월 (예: 2026년 2분기 → 2026-04~2026-06). 그 달 자료가 없으면 최근 3개월
+        sq = quarters[-1]
+        q_year, q_no = sq[:4], int(sq[6])
+        q_months = [f"{q_year}-{m:02d}" for m in range(q_no * 3 - 2, q_no * 3 + 1)]
+        b_default = ((q_months[0], q_months[-1]) if all(m in b_months for m in q_months)
+                     else (b_months[max(0, len(b_months) - 3)], b_months[-1]))
         b_start, b_end = st.select_slider("부산 기간 (월)", options=b_months,
-            value=(b_months[max(0, len(b_months) - 3)], b_months[-1]),
+            value=b_default,
             key="top3_busan_period", on_change=set_map_city, args=("부산",))
 strict_periods = st.checkbox("서울: 선택한 모든 분기에 매출 자료가 있는 업종만 비교", value=True,
     help="여러 분기 선택 시 일부 분기에 매출이 없는 업종이 불리하게 비교되지 않도록 합니다.")
-st.caption("서울의 비중과 특화도는 선택한 기간 조건을 충족한 행정동·업종 자료를 기준으로 계산합니다. "
-           "모든 분기 자료 조건을 적용하면 제외된 업종은 지역 및 서울 전체 비중의 계산에서도 제외됩니다. "
-           "부산은 자료가 있는 월별 값의 평균을 사용하므로 업종별 관측 월수가 다를 수 있습니다.")
 top = build_top3(df, start, end, mode, "sum", require_complete=strict_periods)
 n_region = top["지역"].nunique()
 n_all = df["지역"].nunique()
 st.write(f"**서울 {start} ~ {end}** · 매출 정보가 있는 {n_region}개 지역 (전체 {n_all}개) · 기준: {mode}")
 n_rows, n_miss_rows = period_missing(df, start, end)
-st.caption(f"선택 기간 서울 {n_rows:,}행 중 매출 정보가 없는 {n_miss_rows:,}행은 집계에서 제외했습니다 (0원으로 처리하지 않음). "
-           "여러 분기를 고르면 선택한 집계 조건에 따라 포함되는 분기가 달라질 수 있습니다.")
+# 메모장 모양 안내 상자의 문구 (상자는 탭 아래에 그림). 결측 행 수가 기간에 따라 바뀌므로 계산 뒤에 만듦
+memo_lines = [
+    TOP3_INTRO_CAPTION,
+    "서울의 비중과 특화도는 선택한 기간 조건을 충족한 행정동·업종 자료를 기준으로 계산합니다. "
+    "모든 분기 자료 조건을 적용하면 제외된 업종은 지역 및 서울 전체 비중의 계산에서도 제외됩니다. "
+    "부산은 자료가 있는 월별 값의 평균을 사용하므로 업종별 관측 월수가 다를 수 있습니다.",
+    f"선택 기간 서울 {n_rows:,}행 중 매출 정보가 없는 {n_miss_rows:,}행은 집계에서 제외했습니다 (0원으로 처리하지 않음). "
+    "여러 분기를 고르면 선택한 집계 조건에 따라 포함되는 분기가 달라질 수 있습니다.",
+]
 btop = None
 if bdf is not None:
     btop = build_top3(bdf, b_start, b_end, mode, "mean")  # 부산은 월별 일평균 값이라 더하지 않고 평균
-tab0, tab1, tab2, tab3 = st.tabs(["📌 데이터 이용 참고사항", "지역 하나 보기", "전체 지역 표", "전체 지역 지도"])
+# key + on_change="rerun": 기간 등을 바꿔 다시 실행돼도 보던 탭이 첫 탭으로 돌아가지 않게 선택 탭을 기억
+tab0, tab1, tab2, tab3 = st.tabs(["📌 데이터 이용 참고사항", "지역 하나 보기", "전체 지역 표", "전체 지역 지도"],
+                                 key="top3_main_tab", on_change="rerun")
 # ── 0. 데이터 이용 시 참고사항 (첫 화면) ──
 with tab0:
     st.subheader(DATA_NOTICE_TITLE)
@@ -368,7 +399,7 @@ with tab0:
             st.markdown("\n".join(f"- {t}" for t in items))
 # ── 1. 지역 하나 ([서울] [부산] 하위 탭) ──
 with tab1:
-    one_seoul, one_busan = st.tabs(["서울", "부산"])
+    one_seoul, one_busan = st.tabs(["서울", "부산"], key="top3_one_city_tab", on_change="rerun")
     with one_seoul:
         render_region_view(top, "one_seoul", "역삼1동", "억", TOP3_REGION_CAPTION)
     with one_busan:
@@ -379,7 +410,7 @@ with tab1:
             render_region_view(btop, "one_busan", None, "원", TOP3_REGION_CAPTION_BUSAN)
 # ── 2. 전체 표 ([서울] [부산] 하위 탭) ──
 with tab2:
-    sub_seoul, sub_busan = st.tabs(["서울", "부산"])
+    sub_seoul, sub_busan = st.tabs(["서울", "부산"], key="top3_table_city_tab", on_change="rerun")
     with sub_seoul:
         wide = to_wide(top, df)
         q = st.text_input("지역 이름 검색", "", key="seoul_search")
@@ -446,11 +477,13 @@ with tab3:
                                      disabled=bdf is None)
     def make_city_points(city_name: str, city_top: pd.DataFrame | None,
                          city_coords: pd.DataFrame | None,
-                         gu_of: dict | None = None, gu_pick: str = "전체") -> pd.DataFrame:
+                         gu_of: dict | None = None, gu_pick: str = "전체",
+                         stores: pd.DataFrame | None = None) -> pd.DataFrame:
         """도시별 TOP3 자료를 지도 표현용으로 가공. 결측 매출은 0으로 만들지 않음.
-        gu_pick이 '전체'가 아니면 마지막에 그 구(군)의 행정동만 남김. 기둥 높이·색 기준은 도시 전체로 먼저 계산함."""
+        gu_pick이 '전체'가 아니면 마지막에 그 구(군)의 행정동만 남김. 기둥 높이·색 기준은 도시 전체로 먼저 계산함.
+        stores: store_summary() 결과 (선택 순위 업종의 점포 수를 툴팁에 붙임). None이면 점포 수는 '정보 없음'."""
         columns = ["코드", "name", "station", "r1", "r2", "r3", "lat", "lon",
-                   "city", "color", "sales_txt", "elev", "sales_label"]
+                   "city", "color", "sales_txt", "elev", "sales_label"] + STORE_TIP_COLS
         if city_top is None or city_coords is None or city_top.empty:
             return pd.DataFrame(columns=columns)
         ranks = ["1위", "2위", "3위"]
@@ -467,7 +500,8 @@ with tab3:
                     "1위": "r1", "2위": "r2", "3위": "r3",
                     "위도": "lat", "경도": "lon"})
         points["city"] = city_name
-        points["station"] = points["station"].map(stations_text)
+        # 툴팁 앞머리가 '인근역(800m 이내):'라서 역이 없으면 '없음'만 표시
+        points["station"] = points["station"].map(lambda s: "없음" if s == NO_STATION else stations_text(s))
         sales = city_top.loc[city_top["순위"] == rank_pick, ["코드", "매출"]]
         if sales["코드"].duplicated().any():
             raise ValueError(f"{city_name}: 동일 코드·순위의 매출이 중복되어 있습니다")
@@ -476,7 +510,9 @@ with tab3:
         points["sales_txt"] = points["sales"].map(
             lambda x: NO_INFO if pd.isna(x) else
             (f"{x / 1e8:,.1f}억 원" if city_name == "서울" else f"{x:,.0f}원"))
-        points["sales_label"] = ("업종 추정매출 (선택 분기 기준)" if city_name == "서울"
+        # 서울은 여러 분기를 고르면 분기 매출을 더한 값이라 실제 기간과 '합계'를 함께 표시
+        seoul_period = start if start == end else f"{start}~{end} 합계"
+        points["sales_label"] = (f"업종 추정매출 ({seoul_period})" if city_name == "서울"
                                   else "업종 평균이용금액 (선택 기간 평균)")
         # 높이는 각 도시 내 최대값을 9000으로 정규화: 도시 간 매출액 비교가 아님.
         maximum = points["sales"].max(skipna=True)
@@ -488,25 +524,44 @@ with tab3:
         names = list(counts.index[:MAP_LEGEND_TOP])
         colors = {name: hex_to_rgb(MAP_PALETTE[i % len(MAP_PALETTE)]) for i, name in enumerate(names)}
         points["color"] = points[pick_col].map(lambda value: colors.get(value, GRAY))
+        # 선택 순위 업종의 점포 수 (툴팁 문자열로만 전달해 NaN이 JSON에 들어가지 않게 함)
+        if stores is None:
+            points[STORE_TIP_COLS] = NO_INFO
+            points["store_basis"] = "부산 자료에는 점포 수가 없습니다"
+        else:
+            s = points[["코드", pick_col]].rename(columns={pick_col: "업종"}).merge(
+                stores, on=["코드", "업종"], how="left", validate="many_to_one")
+            # 평균 점포 수는 소수가 생길 수 있어 정수가 아닐 때만 소수 첫째 자리까지 표시
+            fmt = lambda x: NO_INFO if pd.isna(x) else (f"{x:,.0f}개" if float(x).is_integer() else f"{x:,.1f}개")
+            for tip, col in zip(STORE_TIP_COLS, STORE_STOCK_COLS + STORE_FLOW_COLS):
+                points[tip] = s[col].map(fmt).values
+            basis = (start if start == end
+                     else f"점포 수 {start}~{end} 평균 · 개업·폐업 {start}~{end} 합계")
+            points["store_basis"] = s[STORE_STOCK_COLS[0]].map(lambda x: NO_INFO if pd.isna(x) else basis).values
         if gu_pick != "전체":
             points = points[points["코드"].map(gu_of) == gu_pick]
-        st.caption(f"{city_name} 표시 지역 {len(points)}개" + (f" ({gu_pick})" if gu_pick != "전체" else ""))
+        # 표시 지역 수는 서울·부산을 한 캡션으로 모아 출력 (따로 출력하면 사이에 빈 줄 간격이 생김)
+        count_lines.append(f"{city_name} 표시 지역 {len(points)}개" + (f" ({gu_pick})" if gu_pick != "전체" else ""))
         return points[columns]
+    count_lines = []  # make_city_points가 채움
     try:
         seoul_coords = load_top3_coords()
     except ValueError as exc:
         st.error(f"서울 지도 표시를 중단합니다. {exc}")
         seoul_coords = None
-    seoul_points = make_city_points("서울", top, seoul_coords, seoul_gu_of, gu_seoul_pick)
+    seoul_points = make_city_points("서울", top, seoul_coords, seoul_gu_of, gu_seoul_pick,
+                                    store_summary(df, start, end))
     busan_points = (make_city_points("부산", btop, load_busan_coords(), busan_gu_of, gu_busan_pick)
                     if bdf is not None else pd.DataFrame())
+    if count_lines:
+        st.caption("  \n".join(count_lines))  # 마크다운 줄바꿈(공백 2칸+\n)으로 한 요소 안에서 두 줄
     point_frames = [points for points in (seoul_points, busan_points) if not points.empty]
     if not point_frames:
         st.warning("지도에 표시할 서울·부산 데이터 또는 좌표가 없습니다.")
     else:
         pts = pd.concat(point_frames, ignore_index=True)
         needed = ["코드", "name", "station", "r1", "r2", "r3", "lat", "lon",
-                  "city", "color", "sales_txt", "sales_label"]
+                  "city", "color", "sales_txt", "sales_label"] + STORE_TIP_COLS
         # NaN이 브라우저 JSON으로 전달되지 않도록 점 모드에서는 elev 자체를 전달하지 않음.
         if style == "점":
             # 점 모드에는 높이(elev)가 필요하지 않으며 NaN을 JSON에 전달하지 않음.
@@ -554,11 +609,41 @@ with tab3:
         deck = pdk.Deck(
             layers=[layer], map_provider="maplibre", map_style=OPENFREEMAP_STYLE_URL,
             initial_view_state=view,
-            tooltip={"html": "<b>{city} · {name}</b><br/>🚇 {station}"
+            tooltip={"html": "<b>{city} · {name}</b><br/>🚇 인근역(800m 이내): {station}"
                              "<br/>1위 {r1}<br/>2위 {r2}<br/>3위 {r3}"
-                             f"<br/><b>{rank_pick} {{sales_label}}: {{sales_txt}}</b>",
+                             f"<br/><b>{rank_pick} {{sales_label}}: {{sales_txt}}</b>"
+                             f"<br/><br/><b>{rank_pick} 업종 점포</b> <span style='color:#777'>({{store_basis}})</span>"
+                             "<br/>전체 점포 수: {st_total}<br/>일반 점포 수: {st_general}"
+                             "<br/>프랜차이즈 점포 수: {st_franchise}"
+                             "<br/>개업 점포 수: {st_open}<br/>폐업 점포 수: {st_close}",
                      "style": {"backgroundColor": "white", "color": "#222", "fontSize": "13px"}},
         )
+        # 특화도 모드에서도 기둥 높이는 매출이라, 높이를 특화도로 오해하지 않게 지도 바로 위에 알림
+        if mode == "특화도" and style == "기둥":
+            st.caption("**색·순위 = 특화도 기준, 기둥 높이 = 매출 지표 규모** "
+                       "(높이는 특화도가 아니라 그 업종의 서울 추정매출·부산 평균이용금액입니다)")
+        # 범례(지도 바로 위): 지도에 실제로 보이는 지점 기준, 도시별로 색 배정이 달라서 따로 표시. 회색은 '기타 업종'으로 묶음
+        pick_col = {"1위": "r1", "2위": "r2", "3위": "r3"}[rank_pick]
+        legend_rows = []  # 도시별 범례를 한 요소로 모아 출력 (따로 출력하면 사이에 빈 줄 간격이 생김)
+        for city_name, sub in visible.groupby("city", sort=False):
+            gray = sub["color"].map(lambda c: list(c) == GRAY)
+            items = sub.loc[~gray, pick_col].value_counts()
+            colors = sub.loc[~gray].drop_duplicates(pick_col).set_index(pick_col)["color"]
+            chips = [(name, colors[name], n) for name, n in items.items()]
+            n_info_missing = int((sub.loc[gray, pick_col] == NO_INFO).sum())
+            if gray.sum() - n_info_missing:
+                chips.append(("기타 업종", GRAY, int(gray.sum() - n_info_missing)))
+            if n_info_missing:
+                chips.append((NO_INFO, GRAY, n_info_missing))
+            legend_rows.append(
+                f"<div style='font-size:0.85rem;line-height:1.9;'><b>{escape(city_name)} {rank_pick} 업종</b> &nbsp;"
+                + " &nbsp; ".join(
+                    f"<span style='white-space:nowrap;'><span style='display:inline-block;width:11px;height:11px;"
+                    f"border-radius:2px;vertical-align:middle;background:rgb({c[0]},{c[1]},{c[2]});'></span> "
+                    f"{escape(name)} ({n})</span>" for name, c, n in chips)
+                + "</div>")
+        if legend_rows:
+            st.markdown("".join(legend_rows), unsafe_allow_html=True)
         map_key = f"top3_map_both_{city}_{st.session_state['top3_map_reset']}"
         map_box = (st.container(key=map_key) if "key" in inspect.signature(st.container).parameters
                    else st.container())
@@ -570,12 +655,25 @@ with tab3:
                 st.pydeck_chart(deck, use_container_width=True, height=600)
         # 지도 저작권 표시는 지도 바로 아래에 둠 (다른 안내 문구보다 먼저)
         st.caption(MAP_ATTRIBUTION_CAPTION)
-        if style == "기둥":
-            st.caption("서울·부산의 기둥 높이는 직접 비교하면 안 됩니다. 매출 정보가 없는 지점은 기둥을 표시하지 않습니다.")
-        else:
-            st.caption("점은 매출 정보가 없는 지역도 표시할 수 있습니다. 이 경우 툴팁에는 '정보 없음'으로 나옵니다.")
-        st.caption("서울과 부산은 업종 분류·지표가 달라 색상과 금액을 도시 간 직접 비교하면 안 됩니다.")
-        st.caption(BUSAN_TABLE_CAPTION)
+        # 지도 관련 안내 3줄은 아래 메모 상자에 함께 넣음 (메모는 탭 아래에서 그림)
+        memo_lines += ([TOP3_PILLAR_CAPTION, "서울·부산의 기둥 높이는 직접 비교하면 안 됩니다."]
+                       if style == "기둥" else
+                       [TOP3_DOT_CAPTION, "점은 매출 정보가 없는 지역도 표시할 수 있습니다. 이 경우 툴팁에는 '정보 없음'으로 나옵니다."])
+        memo_lines += [
+            TOP3_LEGEND_CAPTION,
+            "서울과 부산은 업종 분류·지표가 달라 색상과 금액을 도시 간 직접 비교하면 안 됩니다.",
+            BUSAN_TABLE_CAPTION,
+        ]
+# ── 페이지 설명·계산 기준 안내 (탭 아래, 메모장 모양) ──
+st.markdown("---")
+st.markdown(
+    "<div style='background:#fff8c5;border:1px solid #e6d77a;border-radius:6px;"
+    "padding:10px 14px;color:#4a4a3a;font-size:0.85rem;line-height:1.55;"
+    "box-shadow:2px 2px 6px rgba(0,0,0,0.08);'>"
+    "<div style='font-weight:600;margin-bottom:4px;'>📝 메모</div>"
+    + "".join(f"<p style='margin:0 0 6px 0;'>• {escape(t)}</p>" for t in memo_lines)
+    + "</div>",
+    unsafe_allow_html=True)
 # ── 공공누리 출처표시: 짧은 안내 + 홈 화면 링크 (전체 출처표시는 홈 화면 하단에 있음) ──
 st.markdown("---")
 st.caption(TOP3_SEOUL_SOURCE_CAPTION)
