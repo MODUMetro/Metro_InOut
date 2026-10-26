@@ -29,19 +29,6 @@ with st.expander("상권 흥망성쇠"):
     st.write("어떤 이슈가 흥망성쇠를 결정했을까?")
     st.page_link("pages/under_ground.py", label="상권 흥망성쇠 보기", icon="📈")
 
-with st.expander("피크타임 & 유동인구 예측"):
-    st.write(
-        "선택한 달 안에서 시작 시간대 이후의 지하철 승하차 인원을 예측합니다. "
-        "예측값은 월 누적 인원이며, "
-        "일별·실시간 예측은 아닙니다."
-    )
-    st.page_link(
-        "pages/subway_app.py",
-        label="지하철 시간대별 승하차 인원 예측 보기",
-        icon="⏰"
-    )
-
-
 # 자료 출처
 with st.expander("자료 출처"):
     st.write(COPYRIGHT_FULL)
@@ -55,3 +42,4 @@ secret_key = st.text_input("Admin Key", type="password", label_visibility="colla
 if secret_key == "qwer":
     show_client_management();
     st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
+    st.page_link("pages/subway_app.py", label="지하철 시간대별 승하차 인원 예측 보기", icon="⏰")

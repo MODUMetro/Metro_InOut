@@ -48,7 +48,7 @@ def show_client_management():
                         conn.commit()
                     st.success(f"{name} 손님의 상담 내역이 성공적으로 저장되었습니다.")
                     
-                # 4. 예상치 못한 DB 에러 발생 시 앱이 죽지 않도록 방어
+                # 예상치 못한 DB 에러 발생 시 앱이 다운 방지 방어코드
                 except Exception as e:
                     st.error("데이터베이스 저장 중 오류가 발생했습니다. 관리자에게 문의해 주세요.")
     
