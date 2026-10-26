@@ -1,3 +1,4 @@
+# requirements.txt 실행 = pip freeze > requirements.txt
 # Web Application & UI
 streamlit==1.63.0
 pydeck==0.9.3
