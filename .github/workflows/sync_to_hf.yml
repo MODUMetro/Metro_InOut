@@ -7,11 +7,20 @@ jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           lfs: true
-      - name: Push to hub
+      - name: Push clean commit to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://mejb:$HF_TOKEN@huggingface.co/spaces/mejb/cityofpulse release_with_huggingface:main
+        run: |
+          rm -rf .git
+          git config --global user.email "bot@action.com"
+          git config --global user.name "GitHub Action Bot"
+          git init
+          git branch -M main
+          git lfs install
+          git lfs track "*.csv" "*.parquet" "*.pkl"
+          git add .
+          git commit -m "Deploy to Hugging Face"
+          git push --force https://mejb:$HF_TOKEN@huggingface.co/spaces/mejb/cityofpulse main
