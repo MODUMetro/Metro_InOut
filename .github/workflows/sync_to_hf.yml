@@ -1,7 +1,7 @@
 name: Sync to Hugging Face Space
 on:
   push:
-    branches: [release_with_huggingface] # 동기화할 브랜치 이름
+    branches: [release_with_huggingface]
   workflow_dispatch:
 jobs:
   sync-to-hub:
@@ -14,4 +14,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://mejb:$HF_TOKEN@huggingface.co/spaces/mejb/mejb/cityofpulse main
+        run: git push --force https://mejb:$HF_TOKEN@huggingface.co/spaces/mejb/cityofpulse release_with_huggingface:main
