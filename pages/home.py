@@ -27,7 +27,7 @@ with st.expander("우리 동네 블루오션, 독점 가능 업종 찾기"):
 
 with st.expander("상권 흥망성쇠"):
     st.write("어떤 이슈가 흥망성쇠를 결정했을까?")
-    st.page_link("pages/under_ground.py", label="상권 흥망성쇠 보기", icon="📈")
+    st.page_link("pages/commercial_rise_fall.py", label="상권 흥망성쇠 보기", icon="📈")
 
 # 자료 출처
 with st.expander("자료 출처"):
