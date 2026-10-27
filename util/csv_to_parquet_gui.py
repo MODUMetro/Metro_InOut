@@ -1,6 +1,3 @@
-# 릴리즈 파일을 만들기 위해 필요한 명령어
-# pyinstaller --noconsole --onefile csv_to_parquet_gui.py
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import pandas as pd

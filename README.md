@@ -39,6 +39,7 @@
 | 일별 행정동 업종(대) 소비매출 월별 일평균 | 부산광역시 Big-데이터웨이브 | [원본 데이터](https://data.busan.go.kr/bdip/opendata/detail.do?publicdatapk=PD_CS00004&uuid=ba3911c5-e5a5-48f5-b0dd-38e3d24a06f8&type=510) |
 | SGIS 행정구역 통계 및 경계 | 국가데이터처(SGIS) | [원본 데이터](https://www.data.go.kr/data/15129688/fileData.do) |
 | 부산교통공사 도시철도역사정보 | 부산교통공사 | [원본 데이터](https://www.data.go.kr/data/15043686/fileData.do) |
+| 일별 역별 시간대별 승하차 | 부산교통공사 | [원본 데이터](https://data.busan.go.kr/bdip/opendata/detail.do?publicdatapk=3057229&uuid=30375f18-7d74-4f60-b1f8-3c2372ef5535) |
 
 
 ## 데이터 이용 안내

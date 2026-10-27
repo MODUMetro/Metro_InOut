@@ -40,17 +40,17 @@ PARQUET_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "Subway_Line_Station_Boarding_
 #                   인근지하철1~5 / 승하차인원1~5 / 승하차개월수1~5 (행정동 대표점 반경 800m, GTX 제외)
 DATA_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_monthly_station_ridership_filled_nearest.csv"
 COORD_PATH = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_site_coordinate.csv"  # 지도용: 행정동 중심 좌표(영역-행정동 데이터에서 변환)
-METRO_PATH_SEOUL = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_metro_coordinates.csv"
+METRO_PATH_SEOUL = RESOURCE_DIR / SEOUL_DATA_FOLDER / "seoul_metro_coordinates.csv"  # 지하철역 위도, 경도 (출처: 서울시 역사마스터 정보)
 
 # 부산지역 데이터 파일 경로
 # 부산 TOP3용: 기준년월, 행정동코드, 행정동명(구 포함), 구, 업종대분류, 평균이용금액, 평균이용건수, 인근지하철역
 BUSAN_DATA_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_commercial.csv"
 # 부산 지도용: 행정동 중심 좌표(구 이름 포함)
 BUSAN_COORD_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_coordinate.csv"  
-# 부산 상하차 인원 반영된 파일 (출처: 부산광역시 Big-데이터웨이브 )
+# 부산 상하차 인원 반영된 파일 (출처: 부산교통공사 '일별 역별 시간대별 승하차', 부산광역시 Big-데이터웨이브)
 BUSAN_METRO_BOARDING_DATA_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_metro_Line_Station_Boarding_Alighting_Information.csv"
 BUSAN_METRO_BOARDING_DATA_PARQUET_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER/ "busan_metro_Line_Station_Boarding_Alighting_Information.parquet"
-# 부산 지하철역 위치 위도, 경도 반영된 파일 (출처: 코레일 레일 포털)
+# 부산 지하철역 위치 위도, 경도 반영된 파일 (출처: 부산교통공사 '도시철도역사정보')
 BUSAN_METRO_POSITION = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_metro_coordinates.csv"
 
 # 머신러닝 학습결과 파일 경로
@@ -149,7 +149,8 @@ COPYRIGHT_FULL = (
     "또한 부산광역시가 제공하는 "
     "'[일별 행정동 업종(대) 소비매출 월별 일평균](https://data.busan.go.kr/bdip/opendata/detail.do?publicdatapk=PD_CS00004&uuid=fda5cd5f-aab7-43eb-9c92-797b04dc28eb&type=510)', "
     "국가데이터처가 제공하는 '[SGIS 행정구역 통계 및 경계](https://www.data.go.kr/data/15129688/fileData.do)', "
-    "부산교통공사가 제공하는 '[도시철도역사정보](https://www.data.go.kr/data/15043686/fileData.do)'를 이용하였습니다. "
+    "부산교통공사가 제공하는 '[도시철도역사정보](https://www.data.go.kr/data/15043686/fileData.do)', "
+    "'[일별 역별 시간대별 승하차](https://data.busan.go.kr/bdip/opendata/detail.do?publicdatapk=3057229&uuid=30375f18-7d74-4f60-b1f8-3c2372ef5535)'를 이용하였습니다. "
     "본 대시보드의 분석 결과는 원본 데이터를 가공·분석한 결과이며, "
     "각 데이터 제공기관의 공식 수치나 분석 결과가 아니고 제공기관이 후원하거나 보증하는 것도 아닙니다."
 )
@@ -202,6 +203,11 @@ OPENFREEMAP_STYLE_URL = "https://tiles.openfreemap.org/styles/positron"
 MAP_ATTRIBUTION_CAPTION = (
     "지도 배경: [OpenFreeMap](https://openfreemap.org/) · "
     "© [OpenMapTiles](https://openmaptiles.org/) · "
+    "Data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)"
+)
+# in_out_data.py 지도 배경(CARTO Dark Matter) 출처표시
+CARTO_ATTRIBUTION_CAPTION = (
+    "지도 배경: © [CARTO](https://carto.com/attributions) · "
     "Data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)"
 )
 
