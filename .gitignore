@@ -2,6 +2,7 @@
 __pycache__/
 build/
 dist/
+chroma_cache/
 
 # git 반영에 필요없는 내용 확장자 파일위주로 제거
 *.spec
