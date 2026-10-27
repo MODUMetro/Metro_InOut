@@ -17,13 +17,17 @@ st.markdown("**사장님의 성공적인 창업과 투자를 위해, 데이터�
 st.markdown("---")
 
 # 기능별 폴더형 UI
-with st.expander("내 타겟 고객이 몰리는 골든타임 역 찾기"):
+with st.expander("골든타임 핵심 역 찾기"):
     st.write("직장인 점심, 심야 등 내가 원하는 시간대에 지갑을 여는 사람들이 가장 많이 내리는 역을 추천합니다.")
     st.page_link("pages/in_out_data.py", label="유동인구 분석 컨설팅 시작하기", icon="🚇")
 
-with st.expander("우리 동네 블루오션, 독점 가능 업종 찾기"):
+with st.expander("블루오션 독점 업종 발굴"):
     st.write("경쟁이 치열한 레드오션을 피해, 해당 지역에서 유독 수요가 몰리는 '특화도 1위' 업종을 발굴해 드립니다.")
     st.page_link("pages/commercial_top3.py", label="지역별 숨은 유망 업종 찾기", icon="💎")
+
+with st.expander("숨은 꿀상권 AI 상담소"):
+    st.write("궁금한 지역이나 독점 가능 업종을 자유롭게 질문해 보세요")
+    st.page_link("pages/chatbot.py", label="AI 상권 분석 챗봇", icon="💬")
 
 with st.expander("상권 흥망성쇠"):
     st.write("어떤 이슈가 흥망성쇠를 결정했을까?")
