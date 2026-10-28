@@ -7,6 +7,7 @@ from views.view_seoul_subway import render_seoul
 from views.view_busan_subway import render_busan
 
 from util.utils import block_right_click_render_pydeck, hide_sidebar, move_scroll_up
+from settings import CARTO_ATTRIBUTION_CAPTION
 
 # ==========================================
 # 자주 사용하는 텍스트 상수 지정
@@ -91,6 +92,7 @@ if map_df is not None and not map_df.empty and map_container is not None:
         )
 
         st.pydeck_chart(r, use_container_width=True)
+        st.caption(CARTO_ATTRIBUTION_CAPTION)
 
 # 스크롤 맨 위로 올리기
 move_scroll_up()
