@@ -3,7 +3,7 @@
 
 # 스트림릿으로 보여주는 사이트 변천사
 * 배포사이트
-    * https://metroinoutgit-i6qqpmcuuqhatw6neryruj.streamlit.app/
+    * https://pulseofcity.streamlit.app
 
 * 1차 마무리
     * 최신 커밋 hash: 0b7e7952f274abb68a137b2c5b57160b0e2ad6d8
@@ -11,7 +11,25 @@
 
 * 2차 진행
     * 브랜치이름: main
-    * 1차 진행안에 추가 및 개선사항으로 진행하기
+    * pydeck 도입
+    * 부산 지역 추가
+    * 학습 문서 올린뒤 상담해주는 챗봇추가
+    * 다른 지역 추가하기 쉽게 view 폴더와 resource 폴더에 도시별로 분류
+    * 연남동 경의중앙선 지하화 테마에서 *상권 흥망성쇠*로 서울/부산 지역별 사회이슈 변화에 따른 유동인구 변화 반영
+    
+# .env에 반영할 내용 
+**레포지토리에 push 금지**
+* OPENAI_API_KEY: 챗봇 사용을 위해 openai platform 사이트에서 발급받은 API KEY를 넣는다
+* DB_URL: DB 서버 url을 넣는다
+    * postgresql://postgres.atouejffuhbjcwqfalrn:[PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres 
+* CARTO_API_KEY: pydeck 지도 api를 사용하기 위해 발급
+    * 발급받는 사이트: https://carto.com/basemaps/apikey/  
+
+# git clone 이후 실행
+* 명령프롬포트(터미널) 실행
+* main.py가 있는 경로 이동
+* 실행 명령어: streamlit run main.py
+
 
 # 서울·부산 상권 데이터
 
