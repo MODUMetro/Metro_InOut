@@ -47,6 +47,17 @@ hr {
     color: #00ff41 !important; 
 }
 
+/* Expander 헤더(summary) 배경색 하얗게 변하는 현상 방지 */
+[data-testid="stExpander"] summary {
+    background-color: transparent !important;
+}
+
+[data-testid="stExpander"] summary:hover,
+[data-testid="stExpander"] summary:focus,
+[data-testid="stExpander"] summary:active {
+    background-color: rgba(0, 255, 65, 0.1) !important; 
+}
+
 /* 캡션(자료 출처 등) 텍스트 스타일 */
 div[data-testid="stCaptionContainer"] p {
     color: #a5d6ff !important;
