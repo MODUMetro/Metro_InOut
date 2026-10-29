@@ -18,6 +18,7 @@ xgboost==3.4.1
 SQLAlchemy==2.0.51
 python-dotenv==1.2.2
 psycopg2-binary
+supabase
 
 # Geospatial & API Request
 geopandas==1.2.0

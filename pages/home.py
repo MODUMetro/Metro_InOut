@@ -1,7 +1,6 @@
 import streamlit as st
 from settings import COPYRIGHT_FULL, BUSAN_SOURCE_CAPTION
 from util.utils import hide_sidebar
-from pages.client_list import show_client_management
 
 # 사이드바 숨김 함수 호출
 hide_sidebar()
@@ -41,9 +40,7 @@ with st.expander("자료 출처"):
 st.markdown("<br><br>", unsafe_allow_html=True)
 
 # Admin Key
-secret_key = st.text_input("Admin Key", type="password", label_visibility="collapsed")
-
-if secret_key == "qwer":
-    show_client_management();
+with st.expander("관리자 메뉴"):
+    st.page_link("pages/admin_auth.py", label="관리자 페이지 입장", icon="🔒")
     # st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
     # st.page_link("pages/subway_app.py", label="지하철 시간대별 승하차 인원 예측 보기", icon="⏰")
