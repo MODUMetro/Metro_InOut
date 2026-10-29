@@ -42,5 +42,3 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 # Admin Key
 with st.expander("관리자 메뉴"):
     st.page_link("pages/admin_auth.py", label="관리자 페이지 입장", icon="🔒")
-    # st.page_link("pages/model_comparison_app.py", label="ML 모델 성능 비교 대시보드", icon="⚖️")
-    # st.page_link("pages/subway_app.py", label="지하철 시간대별 승하차 인원 예측 보기", icon="⏰")
