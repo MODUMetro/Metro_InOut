@@ -24,7 +24,7 @@ def show_client_management():
             
         purpose = st.text_area("방문 목적 및 상담 내용")
         
-        submitted = st.form_submit_button("DB에 저장하기")
+        submitted = st.form_submit_button("DB에 저장하기", use_container_width=True)
         
         if submitted:
             # 숫자만 남기기 (사용자가 실수로 넣은 하이픈, 공백, 문자 등을 모두 강제로 제거)
@@ -80,7 +80,7 @@ def show_client_management():
     )
     
     # 변경사항 저장 로직 (필터링된 데이터프레임 기준으로 인덱스 추출)
-    if st.button("수정 및 삭제 반영하기"):
+    if st.button("수정 및 삭제 반영하기", use_container_width=True):
         changes = st.session_state["consultation_editor"]
         
         with engine.begin() as conn: 
