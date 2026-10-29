@@ -13,10 +13,10 @@ page_rise_fall = st.Page("pages/commercial_rise_fall.py", title="🏪 상권흥�
 #page_comparison = st.Page("pages/model_comparison_app.py", title="⚖️ LightGBM vs XGBoost 비교")
 page_top3 = st.Page("pages/commercial_top3.py", title="🏙️ 지역별 TOP3 업종")
 page_chatbot = st.Page("pages/chatbot.py", title="챗봇으로 물어보세요")
-
+page_admin = st.Page("pages/admin_auth.py", title="관리자 페이지")
 
 # 2. 사이드바 네비게이션 메뉴 구성
-pg = st.navigation([page_main, page_inout, page_rise_fall, page_top3, page_chatbot], position="hidden")
+pg = st.navigation([page_admin, page_main, page_inout, page_rise_fall, page_top3, page_chatbot], position="hidden")
 
 # 3. 구성한 페이지 묶음을 실행
 pg.run()
