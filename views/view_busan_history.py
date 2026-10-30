@@ -26,19 +26,41 @@ def render_busan_history():
 
     st.header("부산 상권 흥망성쇠")
 
-    if '년월일' in df_busan.columns:
-        df_busan[AXIS_X_VALUE] = df_busan['년월일'].astype(str).str[:4]
-        busan_alight = df_busan[df_busan['구분'] == '하차'].copy()
+    # 전체 데이터에서 분석 대상 역 및 행정동 1차 사전 필터링
+    target_metro_stations = ['부산대', '전포', '서면', '부산진', '좌천', '초량']
+    df_busan_filtered = df_busan[df_busan[METRO_STATION].isin(target_metro_stations)].copy()
+
+    target_dongs = ['수정1동', '수정2동', '좌천동', '범일5동']
+    df_busan_comm_filtered = pd.DataFrame()
+    
+    if df_busan_comm is not None and '행정동명' in df_busan_comm.columns:
+        pattern = '|'.join(target_dongs)
+        df_busan_comm_filtered = df_busan_comm[df_busan_comm['행정동명'].str.contains(pattern, na=False)].copy()
+
+    # 필터링된 데이터셋(df_busan_filtered)에 대해서만 파생 변수 일괄 연산
+    if '년월일' in df_busan_filtered.columns:
+        df_busan_filtered[AXIS_X_VALUE] = df_busan_filtered['년월일'].astype(str).str[:4]
         
+        # [1번 Expander 용] 오후 하차 인원 계산
+        busan_alight = df_busan_filtered[df_busan_filtered['구분'] == '하차'].copy()
         b_afternoon_cols = ['13시-14시', '14시-15시', '15시-16시', '16시-17시']
         valid_b_after = [c for c in b_afternoon_cols if c in busan_alight.columns]
         busan_alight[SUM_AFTERNOON_STOPOFF] = busan_alight[valid_b_after].sum(axis=1)
 
+        # [2번 Expander 용] 일일 승하차 합계 계산
+        time_cols = [c for c in df_busan_filtered.columns if '시-' in c]
+        df_busan_filtered[BOARDING_SUM_DAILY] = df_busan_filtered[time_cols].sum(axis=1)
+
+        # ---------------------------------------------------------
+        # UI 렌더링 영역
+        # ---------------------------------------------------------
         # 부산 상권 비교: 서면, 전포, 부산대
         with st.expander("☕ 신구 상권 교체 및 중심 상권: 전포, 부산대", expanded=False):
             st.markdown("**카페거리로 급부상한 전포역과 상권 노후화로 하향세를 보이는 부산대역의 추이를 비교합니다.**")
             
+            # 사전 필터링된 busan_alight에서 필요한 역만 추출
             bench_b1 = busan_alight[busan_alight[METRO_STATION].isin(['부산대', '전포', '서면'])]
+            
             if not bench_b1.empty:
                 trend_b1 = bench_b1.groupby([METRO_STATION, AXIS_X_VALUE])[SUM_AFTERNOON_STOPOFF].mean().round(0).reset_index()
                 
@@ -73,6 +95,7 @@ def render_busan_history():
                 format_dict_b1 = {y: "{:,.0f}" for y in years}
                 st.dataframe(pivot_b1.style.format(format_dict_b1), use_container_width=True, hide_index=True)
 
+        # 공공기관 이전 효과: 해양수산부 부산 이전
         with st.expander("🏢 공공기관 이전 효과: 해양수산부 부산 이전", expanded=False):
             st.markdown("**2025년 12월 해양수산부의 부산 이전으로 인해 인접한 부산진역, 좌천역, 초량역의 유동인구와 배후 상권(수정1·2동, 좌천동, 범일5동)의 매출 증감 현황을 분석합니다.**")
             
@@ -80,11 +103,10 @@ def render_busan_history():
             
             with col1:
                 st.markdown("**🚇 인접 지하철역 일평균 승하차 인원 변화**")
-                time_cols = [c for c in df_busan.columns if '시-' in c]
-                df_busan[BOARDING_SUM_DAILY] = df_busan[time_cols].sum(axis=1)
                 
+                # 사전 필터링된 df_busan_filtered에서 필요한 역만 추출
                 target_stations = ['부산진', '좌천', '초량']
-                bench_b2_sub = df_busan[df_busan[METRO_STATION].isin(target_stations)].copy()
+                bench_b2_sub = df_busan_filtered[df_busan_filtered[METRO_STATION].isin(target_stations)].copy()
                 
                 if not bench_b2_sub.empty:
                     bench_b2_sub = bench_b2_sub[bench_b2_sub[AXIS_X_VALUE].isin(['2025', '2026'])]
@@ -109,15 +131,14 @@ def render_busan_history():
 
             with col2:
                 st.markdown("**💳 배후 상권 평균이용금액 변화**")
-                if df_busan_comm is not None and '기준년월' in df_busan_comm.columns:
-                    df_busan_comm[AXIS_X_VALUE] = df_busan_comm['기준년월'].astype(str).str[:4]
+                
+                # 사전 필터링된 df_busan_comm_filtered 사용
+                if not df_busan_comm_filtered.empty and '기준년월' in df_busan_comm_filtered.columns:
+                    df_busan_comm_filtered[AXIS_X_VALUE] = df_busan_comm_filtered['기준년월'].astype(str).str[:4]
                     
-                    target_dongs = ['수정1동', '수정2동', '좌천동', '범일5동']
-                    pattern = '|'.join(target_dongs)
-                    bench_b2_comm = df_busan_comm[df_busan_comm['행정동명'].str.contains(pattern, na=False)].copy()
+                    bench_b2_comm = df_busan_comm_filtered[df_busan_comm_filtered[AXIS_X_VALUE].isin(['2025', '2026'])].copy()
                     
                     if not bench_b2_comm.empty:
-                        bench_b2_comm = bench_b2_comm[bench_b2_comm[AXIS_X_VALUE].isin(['2025', '2026'])]
                         bench_b2_comm[COMMERCIAL_DISTRICT] = bench_b2_comm['행정동명'].apply(lambda x: next((d for d in target_dongs if d in x), x))
                         bench_b2_comm[AVERAGE_USE_MONEY] = pd.to_numeric(bench_b2_comm[AVERAGE_USE_MONEY], errors='coerce').fillna(0)
                         
@@ -142,6 +163,6 @@ def render_busan_history():
                     else:
                         st.warning("해당 상권의 매출 데이터를 찾을 수 없습니다.")
                 else:
-                    st.warning("상권 매출 데이터 파일(busan_commercial.csv)을 로드하지 못했습니다.")
+                    st.warning("상권 매출 데이터 파일(busan_commercial.csv)을 로드하지 못했거나 데이터를 찾을 수 없습니다.")
 
     st.markdown("---")
