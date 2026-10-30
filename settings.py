@@ -6,7 +6,7 @@
 참조해야 하는 값은 전부 여기서 정의하고, 각 파일은 여기서 import해서 씀.
 
 이 파일은 순수 설정값(상수)만 담음. 데이터 로딩/학습 같은 로직 함수는
-그 로직을 실제로 쓰는 모듈(예: pages/subway_model.py)에 남겨둠 —
+그 로직을 실제로 쓰는 모듈에 남겨둠 —
 설정 파일이 lightgbm/sklearn 같은 무거운 라이브러리에 의존하게 되는 걸 막아서,
 경로 같은 값만 필요한 다른 페이지가 불필요한 패키지까지 끌어오지 않게 하기 위함.
 
@@ -18,8 +18,6 @@
     pages/
       home.py
       in_out_data.py
-      subway_model.py         <- 여기서 이 파일을 import해서 씀
-      subway_app.py           <- 여기서도 이 파일을 import해서 씀
       (다른 페이지들도 필요하면 여기서 import)
 """
 
@@ -52,29 +50,6 @@ BUSAN_METRO_BOARDING_DATA_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_metro
 BUSAN_METRO_BOARDING_DATA_PARQUET_PATH = RESOURCE_DIR / BUSAN_DATA_FOLDER/ "busan_metro_Line_Station_Boarding_Alighting_Information.parquet"
 # 부산 지하철역 위치 위도, 경도 반영된 파일 (출처: 부산교통공사 '도시철도역사정보')
 BUSAN_METRO_POSITION = RESOURCE_DIR / BUSAN_DATA_FOLDER / "busan_metro_coordinates.csv"
-
-# 머신러닝 학습결과 파일 경로
-MODEL_PATH = RESOURCE_DIR / "lgbm_multihorizon_models.pkl"
-MODEL_PATH_XGB = RESOURCE_DIR / "xgb_multihorizon_models.pkl"
-
-HORIZONS = [1, 3, 6]  # 몇 시간 앞을 예측할지
-LAGS = [1, 2, 3]      # 직전 몇 시간대까지를 입력으로 쓸지
-EARLY_STOPPING_ROUNDS = 30  # 두 모델 다 동일하게 적용하는 조기종료 기준
-VALID_FROM_YYYYMM = 202512  # test_from(202602) 이전 구간에서 최근 N개월을 검증용으로 뗌
-
-# LightGBM/XGBoost 성능 비교가 공정하려면 하이퍼파라미터를 최대한 맞춰야 함.
-# num_leaves/max_leaves를 63으로 통일하고, XGBoost는 grow_policy='lossguide'로
-# LightGBM과 같은 리프 중심(leaf-wise) 성장 방식을 쓰게 함(기본값인 depth-wise가 아님).
-# enable_categorical=True로 XGBoost도 원-핫 인코딩 없이 범주형을 네이티브로 처리함.
-LGBM_PARAMS = dict(
-    n_estimators=500, learning_rate=0.05, num_leaves=63,
-    random_state=42, n_jobs=-1, verbosity=-1,
-)
-XGB_PARAMS = dict(
-    n_estimators=500, learning_rate=0.05, max_leaves=63,
-    grow_policy="lossguide", tree_method="hist", enable_categorical=True,
-    random_state=42, n_jobs=-1, verbosity=0,
-)
 
 # 지하철 운영일 순서(04-05시 시작 ~ 03-04시 종료)
 HOUR_ORDER = ["04-05", "05-06", "06-07", "07-08", "08-09", "09-10", "10-11", "11-12",
@@ -161,15 +136,6 @@ COPYRIGHT_SHORT = (
     "(저작권자: 서울특별시, 제공기관: 서울신용보증재단·서울특별시)를 "
     "가공·분석한 결과입니다. "
     "데이터별 저작권자, 제공기관 및 출처는 홈 화면 하단에서 확인하실 수 있습니다."
-)
-
-# 지하철 승하차 인원 페이지(subway_app.py) 하단 출처표시
-COPYRIGHT_SUBWAY = (
-    "이 화면은 서울특별시가 저작권을 보유하고 제공하는 "
-    "'서울시 지하철 호선별 역별 시간대별 승하차 인원 정보'(2015년 공개)를 이용하였으며, "
-    "해당 저작물은 [서울 열린데이터광장](https://data.seoul.go.kr)에서 다운받으실 수 있습니다. "
-    "예측값과 순위는 원본 데이터를 가공·분석한 결과이며, "
-    "서울특별시의 공식 수치나 분석 결과가 아니고 서울특별시가 후원하거나 보증하는 것도 아닙니다."
 )
 
 
