@@ -47,6 +47,9 @@ if region == MENU_TAP_SEOUL:
     map_df, center_lat, center_lon, map_container = render_seoul()
 elif region == MENU_TAP_BUSAN:
     map_df, center_lat, center_lon, map_container = render_busan()
+else:
+    map_df, center_lat, center_lon, map_container = None, None, None, None
+    st.info("👆 위 메뉴에서 분석할 지역(서울/부산)을 선택해 주세요.")
 
 # Pydeck 지도 통일 (하나의 코드로 재사용)
 if map_df is not None and not map_df.empty and map_container is not None:
