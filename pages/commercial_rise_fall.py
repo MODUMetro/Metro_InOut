@@ -27,6 +27,8 @@ if region == REGION_SEOUL:
     render_seoul_history()
 elif region == REGION_BUSAN:
     render_busan_history()
+else:
+    st.info("👆 위 메뉴에서 분석할 지역(서울/부산)을 선택해 주세요.")
 
 # 스크롤 맨 위로 올리기
 move_scroll_up()
