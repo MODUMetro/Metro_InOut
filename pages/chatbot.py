@@ -105,7 +105,6 @@ def load_single_file(file_name: str, file_bytes: bytes) -> list[Document]:
 # =====================================================================================
 # RAG 파이프라인 (실시간 행 단위 진행률 표시)
 # =====================================================================================
-@st.cache_resource(show_spinner=False)
 def build_rag_system(files_payload: tuple[tuple[str, bytes], ...]):
     embedding = OpenAIEmbeddings(model="text-embedding-3-small", api_key=api_key)
     combined_hash = hashlib.md5(b"".join(b for _, b in files_payload)).hexdigest()[:12]

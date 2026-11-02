@@ -11,6 +11,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from pages.client_list import show_client_management
+import gc
 
 # =====================================================================================
 # 환경 설정 및 초기화
@@ -90,10 +91,26 @@ def show_admin_page():
         
         if st.button("🗑️ 학습 캐시 전체 비우기", use_container_width = True):
             if os.path.exists(CHROMA_PERSIST_DIR):
-                shutil.rmtree(CHROMA_PERSIST_DIR)
-                st.success("✅ 캐시가 성공적으로 삭제되었습니다!")
+                # Streamlit 메모리에 남아있는 모든 캐시 강제 초기화
+                st.cache_resource.clear()
+                st.cache_data.clear()
+
+                # 파이썬 가비지 컬렉터 실행 (백그라운드에 남은 ChromaDB 연결 객체 강제 소멸)
+                gc.collect()
+
+                # OS가 파일 락을 완전히 해제할 때까지 아주 잠시 대기
+                time.sleep(0.5)
+            
+                try:
+                    shutil.rmtree(CHROMA_PERSIST_DIR)
+                    st.success("✅ 캐시가 성공적으로 삭제되었습니다!")
+                except PermissionError:
+                    # 드물게 락이 안 풀릴 경우, 에러를 무시하고 지울 수 있는 데까지 강제 삭제
+                    shutil.rmtree(CHROMA_PERSIST_DIR, ignore_errors=True)
+                    st.warning("⚠️ 일부 파일이 사용 중입니다. 앱을 재시작하면 완전히 초기화됩니다.")
             else:
                 st.warning("⚠️ 삭제할 캐시 폴더가 존재하지 않습니다.")
+        
             time.sleep(1.5)
             st.rerun()
             
