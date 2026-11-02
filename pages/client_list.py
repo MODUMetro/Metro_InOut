@@ -28,29 +28,32 @@ def show_client_management():
         
         if submitted:
             # 숫자만 남기기 (사용자가 실수로 넣은 하이픈, 공백, 문자 등을 모두 강제로 제거)
-            clean_phone = re.sub(r'[^0-9]', '', phone)
-            # 필수 입력값 확인
-            if not name or not clean_phone:
-                st.warning("이름과 전화번호는 필수 입력 사항입니다.")
-            
-            # 전화번호 정규식 검증 (숫자만 11자리인지 확인)
-            elif not re.fullmatch(r'^[0-9]{10,11}$', clean_phone):
-                st.warning("전화번호는 하이픈(-) 없이 숫자만 11자리로 입력해 주세요.")
-            
-            # 데이터 검증 통과 시 DB 저장 로직 실행
+            if re.search(r'[^0-9-]', phone):
+                st.warning("전화번호는 숫자만 입력이 가능합니다.")
             else:
-                try:
-                    with engine.connect() as conn:
-                        conn.execute(text("""
-                            INSERT INTO consultations (name, phone, location, category, purpose)
-                            VALUES (:name, :phone, :location, :category, :purpose)
-                        """), {"name": name, "phone": clean_phone, "location": location, "category": category, "purpose": purpose})
-                        conn.commit()
-                    st.success(f"{name} 손님의 상담 내역이 성공적으로 저장되었습니다.")
-                    
-                # 예상치 못한 DB 에러 발생 시 앱이 다운 방지 방어코드
-                except Exception as e:
-                    st.error("데이터베이스 저장 중 오류가 발생했습니다. 관리자에게 문의해 주세요.")
+                clean_phone = re.sub(r'[^0-9]', '', phone)
+                # 필수 입력값 확인
+                if not name or not clean_phone:
+                    st.warning("이름과 전화번호는 필수 입력 사항입니다.")
+                
+                # 전화번호 정규식 검증 (숫자만 11자리인지 확인)
+                elif not re.fullmatch(r'^[0-9]{10,11}$', clean_phone):
+                    st.warning("전화번호는 하이픈(-) 없이 숫자만 11자리로 입력해 주세요.")
+                
+                # 데이터 검증 통과 시 DB 저장 로직 실행
+                else:
+                    try:
+                        with engine.connect() as conn:
+                            conn.execute(text("""
+                                INSERT INTO consultations (name, phone, location, category, purpose)
+                                VALUES (:name, :phone, :location, :category, :purpose)
+                            """), {"name": name, "phone": clean_phone, "location": location, "category": category, "purpose": purpose})
+                            conn.commit()
+                        st.success(f"{name} 손님의 상담 내역이 성공적으로 저장되었습니다.")
+                        
+                    # 예상치 못한 DB 에러 발생 시 앱이 다운 방지 방어코드
+                    except Exception as e:
+                        st.error("데이터베이스 저장 중 오류가 발생했습니다. 관리자에게 문의해 주세요.")
     
     st.divider()
     st.subheader("📋 고객 상담 내역 관리 (조회/수정/삭제)")
